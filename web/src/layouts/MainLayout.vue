@@ -1017,6 +1017,15 @@ const vClickOutside = {
     z-index: 200;
     transform: translateX(-100%);
     transition: transform var(--apple-duration-normal) var(--apple-ease-default);
+    /* 移动端提亮毛玻璃背景 */
+    background: rgba(255, 255, 255, 0.92);
+  }
+
+  /* 暗色模式下的移动端侧边栏 */
+  @media (prefers-color-scheme: dark) {
+    .app-sidebar {
+      background: rgba(44, 44, 46, 0.95);
+    }
   }
 
   .app-sidebar.is-mobile-open {
