@@ -4,187 +4,78 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-CLI Proxy (cli-proxy-go) is a lightweight Go-based AI gateway service that provides unified API access to multiple AI platforms (Claude, OpenAI, Gemini, Bedrock, Azure) with API Key management and usage tracking.
+cli-proxy-go 是一个 Go 语言实现的 AI 代理服务，支持多平台（Claude、OpenAI、Gemini）账户管理和统一 API 接口。
 
-**简化版本** - 移除了用户系统、套餐系统、邮箱验证等功能，专注于 AI 网关核心功能。
+## Development Commands
 
-## Tech Stack
-
-- **Backend**: Go 1.24, Gin 1.11, GORM (MySQL 8.0+), JWT, Zap logger
-- **Frontend**: Vue 3.4 (Composition API), Vite 5, Element Plus, Alova, Pinia
-- **Deployment**: Docker multi-stage build, Docker Compose
-
-## Common Commands
-
-### Backend
+### Backend (Go)
 
 ```bash
-make run              # Run server directly
-make dev              # Development mode with hot reload (requires 'air')
-make build            # Build binary to bin/server
-make test             # Run tests
-make fmt              # Format code
-make lint             # Run linter
-go run ./cmd/server   # Direct Go run
+make run              # 运行后端服务
+make build            # 构建到 bin/server
+make dev              # 热重载开发模式（需安装 air）
+make test             # 运行测试
+make fmt              # 格式化代码
+make lint             # 代码检查（需安装 golangci-lint）
+make deps             # 整理依赖
 ```
 
-### Frontend
+### Frontend (Vue 3)
 
 ```bash
-cd web
-npm install           # Install dependencies
-npm run dev           # Dev server (port 3000, proxies to localhost:8080)
-npm run build         # Production build
+cd web && npm install  # 安装依赖
+cd web && npm run dev  # 开发模式（localhost:3000）
+cd web && npm run build  # 构建
+make web-build         # 构建前端并同步到后端
 ```
 
-### Docker
+### Full Stack
 
 ```bash
-docker-compose up -d                    # Start full stack (MySQL + app)
-docker-compose up -d --build            # Rebuild and start
-docker-compose logs -f cli-proxy        # View logs
+make all              # 完整构建（前端 + 后端）
+docker-compose up -d  # Docker 部署（MySQL + 应用）
 ```
 
 ## Architecture
 
-### Directory Structure
-
 ```
-cmd/server/main.go          # Application entry point
+cmd/server/           # 后端入口
 internal/
-  ├── config/               # YAML configuration loading
-  ├── handler/              # HTTP handlers (routes.go is the routing center)
-  ├── middleware/           # JWT, API Key auth, CORS
-  ├── model/                # GORM data models
-  ├── service/              # Business logic layer
-  ├── repository/           # Data access layer (MySQL)
-  ├── proxy/
-  │   ├── adapter/          # Platform adapters (Claude, OpenAI, Azure, Bedrock, Gemini)
-  │   └── scheduler/        # Account selection, retry, token management
-  └── cache/                # In-memory caching
-pkg/
-  ├── logger/               # Zap-based logging with rotation
-  ├── response/             # Unified API response wrapper
-  └── utils/                # JWT utilities
-web/src/
-  ├── views/                # Vue page components (admin only)
-  ├── api/index.js          # API client (Alova)
-  ├── router/index.js       # Vue Router configuration
-  └── stores/               # Pinia state management
+├── handler/          # HTTP 处理器
+├── middleware/       # 中间件（JWT、API Key 认证、CORS）
+├── service/          # 业务逻辑层
+├── repository/       # 数据访问层
+├── model/            # 数据模型
+├── proxy/
+│   ├── adapter/      # 各平台适配器（Claude/OpenAI/Gemini/Azure/Bedrock）
+│   └── scheduler/    # 调度器（账户池轮询、负载均衡）
+├── cache/            # 缓存层
+└── config/           # 配置管理
+pkg/                  # 公共工具包（logger/response/utils）
+web/                  # 前端（Vue 3 + Vite + Pinia）
+configs/config.yaml   # 主配置文件
 ```
 
-### Request Flow
+## Key Technical Details
 
-1. Request enters through middleware chain: Logger → Recovery → CORS → Gzip
-2. **Proxy routes** (`/claude/*`, `/openai/*`, `/gemini/*`): API Key auth → Client filter → ProxyHandler
-3. **Admin routes** (`/api/*`): JWT auth → Handler
+**后端**: Go 1.21+, Gin, GORM (MySQL), JWT + API Key 双认证
+**前端**: Vue 3 (Composition API + `<script setup>`), Vite 5, Pinia, Alova
 
-### Platform Adapters
+**代理接口路由**:
+- Claude: `/claude/v1/messages`
+- OpenAI: `/openai/v1/chat/completions`
+- Gemini: `/gemini/v1/chat`
+- Responses API: `/responses` 或 `/v1/responses`
 
-Each AI platform has an adapter in `internal/proxy/adapter/`:
-- `claude.go` - Claude Official/Console API
-- `openai.go` - OpenAI Chat Completions
-- `azure.go` - Azure OpenAI
-- `bedrock.go` - AWS Bedrock
-- `gemini.go` - Google Gemini
-- `openai_responses.go` - OpenAI Responses API (for Codex CLI)
+**管理接口**: `/api/admin/*`（需 JWT 认证）
 
-### Account Scheduler
+## Coding Conventions
 
-`internal/proxy/scheduler/scheduler.go` handles:
-- Account selection based on platform, status, and load
-- Automatic retry with account failover
-- Rate limit detection and account status updates
-- OAuth token refresh management
-
-### Authentication
-
-- **JWT**: For admin login (`/api/*` routes), 24-hour expiry
-- **API Key**: For proxy endpoints, stored in `x-api-key` header
-- Admin credentials stored in config file (`configs/config.yaml`)
-
-### Usage Tracking
-
-- `DailyUsage`: Aggregated daily stats per API Key
-- `UsageRecord`: Individual request records (persisted to MySQL)
-- Pricing calculated per model with input/output token rates
-
-## Key Files for Common Tasks
-
-| Task | Files |
-|------|-------|
-| Add new API endpoint | `internal/handler/routes.go`, new handler in `internal/handler/` |
-| Add new AI platform | `internal/proxy/adapter/`, update `internal/model/account.go` |
-| Add new data model | `internal/model/`, `internal/repository/`, `internal/service/` |
-| Add admin page | `web/src/views/`, `web/src/router/index.js` |
-| Modify middleware | `internal/middleware/` |
-| Change config options | `internal/config/config.go`, `configs/config.yaml` |
-
-## Configuration
-
-Main config file: `configs/config.yaml`
-
-Key settings:
-- `server.port`: HTTP port (default 8080)
-- `mysql.*`: Database connection
-- `jwt.secret`: JWT signing key
-- `admin.username`: Admin username (default: admin)
-- `admin.password`: Admin password (plain text or bcrypt hash)
-- `cache.*`: TTL settings for sessions
-
-Environment variables:
-- `JWT_SECRET` - Override JWT secret
-- `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME` - Database config
-- `ADMIN_USERNAME`, `ADMIN_PASSWORD` - Admin credentials
-
-## API Endpoints
-
-### Proxy (requires API Key in `x-api-key` header)
-- `POST /claude/v1/messages` - Claude API
-- `POST /openai/v1/chat/completions` - OpenAI Chat
-- `POST /v1/responses` - OpenAI Responses API
-- `POST /gemini/v1/chat` - Gemini API
-
-### Auth (public)
-- `POST /api/auth/login` - Admin login
-
-### Admin (JWT required)
-- `/api/api-keys` - API Key management (CRUD)
-- `/api/usage/*` - Usage statistics
-- `/api/accounts` - AI platform account management
-- `/api/models-config` - Model pricing configuration
-- `/api/monitor` - System monitoring
-- `/api/cache` - Cache management
-- `/api/configs` - System configuration
+- Go: gofmt 格式化，文件名 snake_case，导出类型 CamelCase
+- 前端: Vue 3 `<script setup>`，组件名 PascalCase，2 空格缩进
+- 保留中文注释风格，错误信息包含上下文
 
 ## Default Credentials
 
-- Username: `admin`
-- Password: `admin123` (configurable via `admin.password` in config)
-
-## Code Conventions
-
-- Go code uses Chinese comments throughout
-- Frontend uses Vue 3 Composition API with `<script setup>`
-- API responses follow unified format via `pkg/response/`
-- Database migrations handled automatically by GORM AutoMigrate
-
-## Features
-
-### Retained Features
-- ✅ AI Gateway: Claude/OpenAI/Gemini/Bedrock/Azure proxy
-- ✅ Multi-account rotation, OAuth auth, health checks
-- ✅ Admin system: JWT auth (credentials in config file)
-- ✅ Admin login captcha: Image captcha for admin login security
-- ✅ API Key management: Admin creates and distributes keys
-- ✅ API Key permissions: Platform/model/rate/client restrictions
-- ✅ Usage statistics: Token count, request count, cost (per API Key)
-- ✅ API Key quotas: Monthly/daily limits
-- ✅ Admin dashboard (simplified)
-
-### Removed Features
-- ❌ User system: Registration, login, user management
-- ❌ Package system: Subscription plans
-- ❌ Email verification
-- ❌ User portal (/user/*)
-- ❌ Price multiplier system
+- 管理员: `admin` / `admin123`
+- 生产环境务必修改 `JWT_SECRET`、数据库密码
