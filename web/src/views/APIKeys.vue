@@ -16,13 +16,22 @@
         <h1 class="page-title">API Key 管理</h1>
         <p class="page-subtitle">查看和管理所有 API Key</p>
       </div>
-      <button class="btn btn-outline" @click="fetchAPIKeys">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="23,4 23,10 17,10"/>
-          <path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/>
-        </svg>
-        刷新
-      </button>
+      <div class="header-actions">
+        <button class="btn btn-primary" @click="openCreateDialog">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          创建 Key
+        </button>
+        <button class="btn btn-outline" @click="fetchAPIKeys">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="23,4 23,10 17,10"/>
+            <path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/>
+          </svg>
+          刷新
+        </button>
+      </div>
     </div>
 
     <!-- API Key 表格 -->
@@ -57,7 +66,7 @@
                 </span>
               </td>
               <td class="col-rate">
-                <span class="rate-info">{{ key.rate_limit }}/分</span>
+                <span class="rate-info">{{ formatRateLimit(key.rate_limit) }}</span>
               </td>
               <td class="col-requests">{{ formatNumber(key.request_count) }}</td>
               <td class="col-cost">
@@ -283,6 +292,124 @@
         </div>
       </div>
     </Teleport>
+
+    <!-- 创建 API Key 弹窗 -->
+    <Teleport to="body">
+      <div v-if="createDialogVisible" class="modal-overlay" @click.self="createDialogVisible = false">
+        <div class="modal modal-lg">
+          <div class="modal-header">
+            <h2>创建 API Key</h2>
+            <button class="modal-close" @click="createDialogVisible = false">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
+          <div class="modal-body">
+            <form class="create-form" @submit.prevent="handleCreate">
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label required">名称</label>
+                  <input v-model="createForm.name" type="text" class="form-input" placeholder="API Key 名称" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">描述</label>
+                  <input v-model="createForm.description" type="text" class="form-input" placeholder="可选描述" />
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">允许平台</label>
+                  <input v-model="createForm.allowed_platforms" type="text" class="form-input" placeholder="留空允许全部，多个用逗号分隔" />
+                  <span class="form-hint">可选: claude, openai, gemini, bedrock, azure</span>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">允许客户端</label>
+                  <input v-model="createForm.allowed_clients" type="text" class="form-input" placeholder="留空允许全部，多个用逗号分隔" />
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">允许模型</label>
+                  <input v-model="createForm.allowed_models" type="text" class="form-input" placeholder="留空允许全部" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">禁用模型</label>
+                  <input v-model="createForm.blocked_models" type="text" class="form-input" placeholder="禁止使用的模型" />
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">限速 (次/分钟)</label>
+                  <input v-model.number="createForm.rate_limit" type="number" class="form-input" placeholder="0 表示不限制" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">每日限额 (次)</label>
+                  <input v-model.number="createForm.daily_limit" type="number" class="form-input" placeholder="0 表示不限制" />
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">月度配额 ($)</label>
+                  <input v-model.number="createForm.monthly_quota" type="number" step="0.01" class="form-input" placeholder="0 表示不限制" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">过期时间</label>
+                  <input v-model="createForm.expires_at" type="datetime-local" class="form-input" />
+                </div>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" @click="createDialogVisible = false">取消</button>
+            <button class="btn btn-primary" :disabled="creating || !createForm.name" @click="handleCreate">
+              <span v-if="creating" class="btn-loading"></span>
+              {{ creating ? '创建中...' : '创建' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- 创建成功弹窗 -->
+    <Teleport to="body">
+      <div v-if="keyCreatedDialogVisible" class="modal-overlay">
+        <div class="modal modal-sm">
+          <div class="modal-header success">
+            <div class="success-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
+                <polyline points="22,4 12,14.01 9,11.01"/>
+              </svg>
+            </div>
+            <h2>创建成功</h2>
+          </div>
+          <div class="modal-body">
+            <p class="key-warning">请立即复制并妥善保存此 Key，关闭后将无法再次查看完整 Key！</p>
+            <div class="key-display">
+              <code class="key-value">{{ createdKey }}</code>
+              <button class="copy-btn" @click="copyKey" :class="{ copied: keyCopied }">
+                <svg v-if="!keyCopied" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                  <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+                </svg>
+                <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="20,6 9,17 4,12"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-primary" @click="closeKeyCreatedDialog">我已复制，关闭</button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -307,6 +434,27 @@ const deleteDialogVisible = ref(false)
 const deleteTarget = ref(null)
 const deleting = ref(false)
 
+// 创建相关
+const createDialogVisible = ref(false)
+const creating = ref(false)
+const createForm = reactive({
+  name: '',
+  description: '',
+  allowed_platforms: '',
+  allowed_models: '',
+  blocked_models: '',
+  allowed_clients: '',
+  rate_limit: 0,
+  daily_limit: 0,
+  monthly_quota: 0,
+  expires_at: ''
+})
+
+// 创建成功显示 Key
+const keyCreatedDialogVisible = ref(false)
+const createdKey = ref('')
+const keyCopied = ref(false)
+
 function formatDate(str) {
   if (!str) return '-'
   return new Date(str).toLocaleString('zh-CN')
@@ -315,6 +463,11 @@ function formatDate(str) {
 function formatNumber(num) {
   if (!num) return '0'
   return num.toLocaleString()
+}
+
+function formatRateLimit(rate) {
+  if (!rate || rate <= 0) return '不限'
+  return `${rate}/分`
 }
 
 // 判断 API Key 是否过期
@@ -407,6 +560,77 @@ async function fetchLogs() {
   }
 }
 
+// 创建 API Key
+function openCreateDialog() {
+  // 重置表单
+  createForm.name = ''
+  createForm.description = ''
+  createForm.allowed_platforms = ''
+  createForm.allowed_models = ''
+  createForm.blocked_models = ''
+  createForm.allowed_clients = ''
+  createForm.rate_limit = 0
+  createForm.daily_limit = 0
+  createForm.monthly_quota = 0
+  createForm.expires_at = ''
+  createDialogVisible.value = true
+}
+
+async function handleCreate() {
+  if (!createForm.name) {
+    ElMessage.error('请输入 API Key 名称')
+    return
+  }
+
+  creating.value = true
+  try {
+    const data = {
+      name: createForm.name,
+      description: createForm.description,
+      allowed_platforms: createForm.allowed_platforms,
+      allowed_models: createForm.allowed_models,
+      blocked_models: createForm.blocked_models,
+      allowed_clients: createForm.allowed_clients,
+      rate_limit: createForm.rate_limit || 0,
+      daily_limit: createForm.daily_limit || 0,
+      monthly_quota: createForm.monthly_quota || 0
+    }
+    if (createForm.expires_at) {
+      data.expires_at = new Date(createForm.expires_at).toISOString()
+    }
+
+    const res = await api.adminCreateAPIKey(data)
+    createDialogVisible.value = false
+
+    // 显示创建的 Key
+    createdKey.value = res.data.key
+    keyCopied.value = false
+    keyCreatedDialogVisible.value = true
+
+    // 刷新列表
+    fetchAPIKeys()
+  } catch (e) {
+    ElMessage.error('创建失败')
+  } finally {
+    creating.value = false
+  }
+}
+
+async function copyKey() {
+  try {
+    await navigator.clipboard.writeText(createdKey.value)
+    keyCopied.value = true
+    ElMessage.success('已复制到剪贴板')
+  } catch {
+    ElMessage.error('复制失败')
+  }
+}
+
+function closeKeyCreatedDialog() {
+  keyCreatedDialogVisible.value = false
+  createdKey.value = ''
+}
+
 onMounted(() => {
   fetchAPIKeys()
 })
@@ -428,6 +652,11 @@ onMounted(() => {
 
 .header-content {
   flex: 1;
+}
+
+.header-actions {
+  display: flex;
+  gap: var(--apple-spacing-sm);
 }
 
 .page-title {
@@ -919,6 +1148,144 @@ onMounted(() => {
   color: var(--apple-text-secondary);
   text-align: center;
   margin: 0;
+}
+
+/* 创建表单 */
+.create-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--apple-spacing-lg);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--apple-spacing-lg);
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--apple-spacing-xs);
+}
+
+.form-label {
+  font-size: var(--apple-text-sm);
+  font-weight: var(--apple-font-medium);
+  color: var(--apple-text-primary);
+}
+
+.form-label.required::after {
+  content: ' *';
+  color: var(--apple-red);
+}
+
+.form-input {
+  padding: var(--apple-spacing-sm) var(--apple-spacing-md);
+  font-size: var(--apple-text-sm);
+  color: var(--apple-text-primary);
+  background: var(--apple-fill-quaternary);
+  border: 1px solid transparent;
+  border-radius: var(--apple-radius-sm);
+  transition: all var(--apple-duration-fast) var(--apple-ease-default);
+}
+
+.form-input::placeholder {
+  color: var(--apple-text-placeholder);
+}
+
+.form-input:hover {
+  background: var(--apple-fill-tertiary);
+}
+
+.form-input:focus {
+  background: var(--apple-bg-primary);
+  border-color: var(--apple-blue);
+  box-shadow: 0 0 0 2px var(--apple-blue-light);
+}
+
+.form-hint {
+  font-size: var(--apple-text-xs);
+  color: var(--apple-text-tertiary);
+}
+
+/* 成功弹窗 */
+.modal-header.success {
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--apple-spacing-md);
+}
+
+.success-icon {
+  width: 56px;
+  height: 56px;
+  background: var(--apple-green-light);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.success-icon svg {
+  width: 28px;
+  height: 28px;
+  color: var(--apple-green);
+}
+
+.key-warning {
+  font-size: var(--apple-text-sm);
+  color: var(--apple-orange);
+  text-align: center;
+  margin-bottom: var(--apple-spacing-md);
+  padding: var(--apple-spacing-sm);
+  background: var(--apple-orange-light);
+  border-radius: var(--apple-radius-sm);
+}
+
+.key-display {
+  display: flex;
+  align-items: center;
+  gap: var(--apple-spacing-sm);
+  padding: var(--apple-spacing-md);
+  background: var(--apple-bg-tertiary);
+  border-radius: var(--apple-radius-md);
+}
+
+.key-value {
+  flex: 1;
+  font-family: var(--apple-font-mono);
+  font-size: var(--apple-text-sm);
+  color: var(--apple-text-primary);
+  word-break: break-all;
+}
+
+.copy-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--apple-radius-sm);
+  color: var(--apple-text-secondary);
+  background: var(--apple-fill-quaternary);
+  transition: all var(--apple-duration-fast) var(--apple-ease-default);
+  flex-shrink: 0;
+}
+
+.copy-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.copy-btn:hover {
+  background: var(--apple-blue);
+  color: white;
+}
+
+.copy-btn.copied {
+  background: var(--apple-green);
+  color: white;
 }
 
 /* 响应式 */

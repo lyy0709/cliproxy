@@ -15,10 +15,12 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"io"
+	"net/http"
 	"strings"
 	"time"
 
 	"cli-proxy/pkg/logger"
+	"cli-proxy/pkg/utils"
 
 	"github.com/gin-gonic/gin"
 )
@@ -103,10 +105,26 @@ func Logger() gin.HandlerFunc {
 		// 获取请求体大小
 		var requestBodySize int64
 		if c.Request.Body != nil {
-			// 读取请求体以获取大小，然后重新设置
-			bodyBytes, _ := io.ReadAll(c.Request.Body)
-			requestBodySize = int64(len(bodyBytes))
-			c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+			if c.Request.ContentLength > utils.MaxRequestBodyBytes {
+				c.AbortWithStatusJSON(http.StatusRequestEntityTooLarge, gin.H{
+					"code":    http.StatusRequestEntityTooLarge,
+					"message": "请求体过大",
+				})
+				return
+			}
+			bodyBytes, err := utils.ReadAllWithLimit(c.Request.Body, utils.MaxRequestBodyBytes)
+			if err != nil {
+				if err == utils.ErrBodyTooLarge {
+					c.AbortWithStatusJSON(http.StatusRequestEntityTooLarge, gin.H{
+						"code":    http.StatusRequestEntityTooLarge,
+						"message": "请求体过大",
+					})
+					return
+				}
+			} else {
+				requestBodySize = int64(len(bodyBytes))
+				c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+			}
 		}
 
 		// 包装 ResponseWriter 以捕获响应体大小

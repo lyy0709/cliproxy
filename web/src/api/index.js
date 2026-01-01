@@ -65,6 +65,12 @@ const Delete = (url, config) => alovaInstance.Delete(url, config).send()
 export default {
   // Auth
   login: (data) => Post('/auth/login', data),
+  getCaptcha: () => Get('/auth/captcha'),
+
+  // Admin - Password Management
+  getAdminStatus: () => Get('/admin/status'),
+  changePassword: (data) => Put('/admin/password', data),
+  forceChangePassword: (data) => Post('/admin/force-change-password', data),
 
   // Admin - Accounts
   getAccountTypes: () => Get('/admin/accounts/types'),

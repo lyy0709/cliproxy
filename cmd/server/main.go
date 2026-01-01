@@ -62,6 +62,9 @@ func main() {
 	if err := config.Load(configPath); err != nil {
 		panic(fmt.Sprintf("加载配置失败: %v", err))
 	}
+	if err := config.EnsureSecrets(configPath); err != nil {
+		panic(fmt.Sprintf("初始化安全密钥失败: %v", err))
+	}
 
 	// 初始化日志系统
 	logDir := config.Cfg.Log.Dir
@@ -123,6 +126,15 @@ func main() {
 	// 初始化默认错误规则配置
 	if err := repository.InitDefaultErrorRules(); err != nil {
 		log.Warn("初始化错误规则配置: %v", err)
+	}
+
+	// 初始化默认管理员账户
+	if err := repository.InitDefaultAdmin(); err != nil {
+		log.Warn("初始化默认管理员: %v", err)
+	}
+	// 加密已有账号的敏感字段
+	if err := repository.EncryptAccountSecrets(); err != nil {
+		log.Warn("加密账号敏感字段失败: %v", err)
 	}
 
 	// 初始化配置服务

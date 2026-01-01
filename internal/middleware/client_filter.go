@@ -15,12 +15,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
+	"net/http"
 	"strings"
 
 	"cli-proxy/internal/model"
 	"cli-proxy/internal/service"
 	"cli-proxy/pkg/logger"
 	"cli-proxy/pkg/response"
+	"cli-proxy/pkg/utils"
 
 	"github.com/gin-gonic/gin"
 )
@@ -39,6 +41,12 @@ func ClientFilter() gin.HandlerFunc {
 
 		// 构建请求上下文
 		reqCtx := buildRequestContext(c)
+		if c.IsAborted() {
+			return
+		}
+		if c.IsAborted() {
+			return
+		}
 
 		// 执行验证
 		result := filterService.ValidateRequest(reqCtx)
@@ -88,8 +96,20 @@ func buildRequestContext(c *gin.Context) *service.RequestContext {
 
 	// 解析请求体（仅 POST/PUT/PATCH）
 	if c.Request.Method == "POST" || c.Request.Method == "PUT" || c.Request.Method == "PATCH" {
-		bodyBytes, err := io.ReadAll(c.Request.Body)
-		if err == nil && len(bodyBytes) > 0 {
+		if c.Request.ContentLength > utils.MaxRequestBodyBytes {
+			response.Error(c, http.StatusRequestEntityTooLarge, "请求体过大")
+			c.Abort()
+			return ctx
+		}
+		bodyBytes, err := utils.ReadAllWithLimit(c.Request.Body, utils.MaxRequestBodyBytes)
+		if err != nil {
+			if err == utils.ErrBodyTooLarge {
+				response.Error(c, http.StatusRequestEntityTooLarge, "请求体过大")
+				c.Abort()
+			}
+			return ctx
+		}
+		if len(bodyBytes) > 0 {
 			// 重置 Body 以便后续处理
 			c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 

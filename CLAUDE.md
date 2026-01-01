@@ -175,6 +175,7 @@ Environment variables:
 - ✅ AI Gateway: Claude/OpenAI/Gemini/Bedrock/Azure proxy
 - ✅ Multi-account rotation, OAuth auth, health checks
 - ✅ Admin system: JWT auth (credentials in config file)
+- ✅ Admin login captcha: Image captcha for admin login security
 - ✅ API Key management: Admin creates and distributes keys
 - ✅ API Key permissions: Platform/model/rate/client restrictions
 - ✅ Usage statistics: Token count, request count, cost (per API Key)
@@ -184,6 +185,6 @@ Environment variables:
 ### Removed Features
 - ❌ User system: Registration, login, user management
 - ❌ Package system: Subscription plans
-- ❌ Email verification, captcha
+- ❌ Email verification
 - ❌ User portal (/user/*)
 - ❌ Price multiplier system

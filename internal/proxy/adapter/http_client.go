@@ -29,6 +29,7 @@ import (
 
 	"cli-proxy/internal/model"
 	"cli-proxy/pkg/logger"
+	"cli-proxy/pkg/utils"
 
 	utls "github.com/refraction-networking/utls"
 	"golang.org/x/net/proxy"
@@ -337,14 +338,10 @@ func ReadResponseBody(resp *http.Response) ([]byte, error) {
 	}
 
 	// 也检查内容是否以 gzip magic bytes 开头（有时服务端不设置 Content-Encoding）
-	// 先读取到 buffer，检查前两个字节
-	var buf bytes.Buffer
-	_, err := io.Copy(&buf, reader)
+	data, err := utils.ReadAllWithLimit(reader, utils.MaxResponseBodyBytes)
 	if err != nil {
 		return nil, err
 	}
-
-	data := buf.Bytes()
 
 	// 如果没有通过 Content-Encoding 检测到 gzip，但内容以 gzip magic bytes 开头
 	if !strings.EqualFold(contentEncoding, "gzip") && len(data) >= 2 && data[0] == 0x1f && data[1] == 0x8b {
@@ -357,7 +354,7 @@ func ReadResponseBody(resp *http.Response) ([]byte, error) {
 		}
 		defer gzReader.Close()
 
-		decompressed, err := io.ReadAll(gzReader)
+		decompressed, err := utils.ReadAllWithLimit(gzReader, utils.MaxResponseBodyBytes)
 		if err != nil {
 			log.Warn("gzip 解压读取失败: %v", err)
 			return data, nil // 返回原始数据

@@ -17,6 +17,10 @@ jwt:
   secret: cli-proxy-jwt-secret-change-in-production
   expire_hours: 24
 
+security:
+  # 数据加密密钥（首次启动自动生成）
+  data_key: ""
+
 log:
   dir: logs
   level: info
@@ -27,11 +31,3 @@ cache:
   unavailable_ttl: 5
   concurrency_ttl: 5
   default_concurrency_max: 5
-
-# 管理员配置
-admin:
-  username: admin
-  # 密码可以是明文或 bcrypt 哈希
-  # 明文: admin123
-  # bcrypt 哈希: $2a$10$... (推荐生产环境使用)
-  password: admin123

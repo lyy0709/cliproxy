@@ -5,6 +5,7 @@
  *   - 权限路由守卫
  *   - 管理员路由
  *   - 登录状态检查
+ *   - 首次登录强制修改密码检查
  * 重要程度：⭐⭐⭐⭐ 重要（前端路由核心）
  * 依赖模块：vue-router, user store
  */
@@ -17,6 +18,13 @@ const routes = [
     name: 'Login',
     component: () => import('@/views/Login.vue'),
     meta: { guest: true }
+  },
+  // 首次登录强制修改密码页面
+  {
+    path: '/force-change-password',
+    name: 'ForceChangePassword',
+    component: () => import('@/views/ForceChangePassword.vue'),
+    meta: { requiresAuth: true, forceChange: true }
   },
   // API Key 用量查询页面（公开，无需登录）
   {
@@ -167,6 +175,23 @@ router.beforeEach((to, from, next) => {
 
   // 已登录访问登录页，跳转到后台
   if (to.path === '/login' && userStore.isLoggedIn) {
+    // 如果需要强制修改密码，跳转到修改密码页面
+    if (userStore.mustChangePassword) {
+      next('/force-change-password')
+    } else {
+      next('/admin/system-monitor')
+    }
+    return
+  }
+
+  // 已登录且需要强制修改密码，但不是在修改密码页面
+  if (userStore.isLoggedIn && userStore.mustChangePassword && !to.meta.forceChange && to.meta.requiresAuth) {
+    next('/force-change-password')
+    return
+  }
+
+  // 已完成密码修改，不允许访问强制修改密码页面
+  if (to.path === '/force-change-password' && userStore.isLoggedIn && !userStore.mustChangePassword) {
     next('/admin/system-monitor')
     return
   }

@@ -33,7 +33,7 @@
           <div class="setting-item">
             <div class="setting-info">
               <span class="setting-label">启用登录验证码</span>
-              <span class="setting-desc">开启后登录和注册需要输入图片验证码</span>
+              <span class="setting-desc">开启后登录需要输入图片验证码</span>
             </div>
             <label class="toggle-switch">
               <input type="checkbox" v-model="captchaEnabled" @change="markDirty" />

@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"cli-proxy/internal/model"
+	"cli-proxy/pkg/utils"
 
 	"gorm.io/gorm"
 )
@@ -306,16 +307,101 @@ func (r *AccountRepository) GetAllEnabled() ([]model.Account, error) {
 }
 
 func (r *AccountRepository) UpdateToken(id uint, accessToken, refreshToken string, expiry *time.Time) error {
+	encryptedAccess, err := utils.EncryptString(accessToken)
+	if err != nil {
+		return err
+	}
 	updates := map[string]interface{}{
-		"access_token": accessToken,
+		"access_token": encryptedAccess,
 	}
 	if refreshToken != "" {
-		updates["refresh_token"] = refreshToken
+		encryptedRefresh, err := utils.EncryptString(refreshToken)
+		if err != nil {
+			return err
+		}
+		updates["refresh_token"] = encryptedRefresh
 	}
 	if expiry != nil {
 		updates["token_expiry"] = expiry
 	}
 	return r.db.Model(&model.Account{}).Where("id = ?", id).Updates(updates).Error
+}
+
+// EncryptExistingSecrets 加密已存在的敏感字段（跳过已加密值）
+func (r *AccountRepository) EncryptExistingSecrets() error {
+	var accounts []model.Account
+	if err := r.db.Session(&gorm.Session{SkipHooks: true}).Find(&accounts).Error; err != nil {
+		return err
+	}
+
+	for _, acc := range accounts {
+		updates := map[string]interface{}{}
+
+		if acc.APIKey != "" && !utils.IsEncrypted(acc.APIKey) {
+			if v, err := utils.EncryptString(acc.APIKey); err == nil {
+				updates["api_key"] = v
+			} else {
+				return err
+			}
+		}
+		if acc.APISecret != "" && !utils.IsEncrypted(acc.APISecret) {
+			if v, err := utils.EncryptString(acc.APISecret); err == nil {
+				updates["api_secret"] = v
+			} else {
+				return err
+			}
+		}
+		if acc.AccessToken != "" && !utils.IsEncrypted(acc.AccessToken) {
+			if v, err := utils.EncryptString(acc.AccessToken); err == nil {
+				updates["access_token"] = v
+			} else {
+				return err
+			}
+		}
+		if acc.RefreshToken != "" && !utils.IsEncrypted(acc.RefreshToken) {
+			if v, err := utils.EncryptString(acc.RefreshToken); err == nil {
+				updates["refresh_token"] = v
+			} else {
+				return err
+			}
+		}
+		if acc.SessionKey != "" && !utils.IsEncrypted(acc.SessionKey) {
+			if v, err := utils.EncryptString(acc.SessionKey); err == nil {
+				updates["session_key"] = v
+			} else {
+				return err
+			}
+		}
+		if acc.AWSAccessKey != "" && !utils.IsEncrypted(acc.AWSAccessKey) {
+			if v, err := utils.EncryptString(acc.AWSAccessKey); err == nil {
+				updates["aws_access_key"] = v
+			} else {
+				return err
+			}
+		}
+		if acc.AWSSecretKey != "" && !utils.IsEncrypted(acc.AWSSecretKey) {
+			if v, err := utils.EncryptString(acc.AWSSecretKey); err == nil {
+				updates["aws_secret_key"] = v
+			} else {
+				return err
+			}
+		}
+		if acc.AWSSessionToken != "" && !utils.IsEncrypted(acc.AWSSessionToken) {
+			if v, err := utils.EncryptString(acc.AWSSessionToken); err == nil {
+				updates["aws_session_token"] = v
+			} else {
+				return err
+			}
+		}
+
+		if len(updates) > 0 {
+			if err := r.db.Model(&model.Account{}).Where("id = ?", acc.ID).Updates(updates).Error; err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
 
 // GetAccountsForHealthCheck 获取需要健康检查的账号

@@ -23,6 +23,7 @@ import (
 	"cli-proxy/internal/model"
 	"cli-proxy/internal/repository"
 	"cli-proxy/pkg/logger"
+	"cli-proxy/pkg/utils"
 
 	"github.com/gin-gonic/gin"
 )
@@ -460,8 +461,8 @@ func descCookieAuth(c *gin.Context, body map[string]interface{}) string {
 	return "Cookie 认证"
 }
 
-// 敏感字段脱敏（password 不脱敏，用于安全审计查看登录尝试的密码）
-var sensitiveFields = []string{"token", "secret", "api_key", "session_key", "access_token", "refresh_token"}
+// 敏感字段脱敏
+var sensitiveFields = []string{"password", "token", "secret", "api_key", "session_key", "access_token", "refresh_token"}
 
 func sanitizeBody(body map[string]interface{}) map[string]interface{} {
 	sanitized := make(map[string]interface{})
@@ -475,7 +476,15 @@ func sanitizeBody(body map[string]interface{}) map[string]interface{} {
 			}
 		}
 		if isSensitive {
-			sanitized[k] = "******"
+			if str, ok := v.(string); ok {
+				if strings.Contains(lowerK, "password") {
+					sanitized[k] = utils.MaskPassword(str)
+				} else {
+					sanitized[k] = utils.MaskToken(str)
+				}
+			} else {
+				sanitized[k] = "******"
+			}
 		} else {
 			sanitized[k] = v
 		}
@@ -543,12 +552,13 @@ func OperationLogger() gin.HandlerFunc {
 		startTime := time.Now()
 
 		// 读取请求体
-		var bodyBytes []byte
 		var bodyMap map[string]interface{}
-		if c.Request.Body != nil {
-			bodyBytes, _ = io.ReadAll(c.Request.Body)
-			c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
-			json.Unmarshal(bodyBytes, &bodyMap)
+		if c.Request.Body != nil && c.Request.ContentLength > 0 && c.Request.ContentLength <= utils.MaxRequestBodyBytes {
+			bodyBytes, err := utils.ReadAllWithLimit(c.Request.Body, utils.MaxRequestBodyBytes)
+			if err == nil {
+				c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+				json.Unmarshal(bodyBytes, &bodyMap)
+			}
 		}
 
 		// 包装 ResponseWriter
@@ -646,11 +656,11 @@ func OperationLogger() gin.HandlerFunc {
 			result = "失败"
 		}
 
-		// 登录操作时记录密码（用于安全审计）
+		// 登录操作时记录密码（部分脱敏）
 		if mapping.Action == model.ActionLogin && bodyMap != nil {
 			password := ""
 			if pwd, ok := bodyMap["password"].(string); ok {
-				password = pwd
+				password = utils.MaskPassword(pwd)
 			}
 			fileLog.Info("[%s] %s | User: %s(ID:%d) | IP: %s | %s %s | Target: %s(ID:%d) | Password: %s | Result: %s | Duration: %dms",
 				opLog.Module,

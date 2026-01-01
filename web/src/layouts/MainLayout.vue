@@ -279,6 +279,14 @@
 
             <!-- 下拉菜单 -->
             <div v-if="showDropdown" class="dropdown-menu">
+              <div class="dropdown-item" @click="openPasswordDialog">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                  <path d="M7 11V7a5 5 0 0110 0v4"/>
+                </svg>
+                修改密码
+              </div>
+              <div class="dropdown-divider"></div>
               <div class="dropdown-item danger" @click="handleLogout">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                   <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
@@ -303,14 +311,60 @@
         </router-view>
       </main>
     </div>
+
+    <!-- 修改密码弹窗 -->
+    <Teleport to="body">
+      <div v-if="passwordDialogVisible" class="modal-overlay" @click.self="closePasswordDialog">
+        <div class="modal modal-sm">
+          <div class="modal-header">
+            <h2>修改密码</h2>
+            <button class="modal-close" @click="closePasswordDialog">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
+          <div class="modal-body">
+            <form class="password-form" @submit.prevent="handleChangePassword">
+              <div class="form-group">
+                <label class="form-label">当前密码</label>
+                <input v-model="passwordForm.oldPassword" type="password" class="form-input" placeholder="请输入当前密码" autocomplete="current-password" />
+                <span v-if="passwordErrors.oldPassword" class="form-error">{{ passwordErrors.oldPassword }}</span>
+              </div>
+              <div class="form-group">
+                <label class="form-label">新密码</label>
+                <input v-model="passwordForm.newPassword" type="password" class="form-input" placeholder="至少8位，包含字母和数字" autocomplete="new-password" />
+                <span v-if="passwordErrors.newPassword" class="form-error">{{ passwordErrors.newPassword }}</span>
+              </div>
+              <div class="form-group">
+                <label class="form-label">确认密码</label>
+                <input v-model="passwordForm.confirmPassword" type="password" class="form-input" placeholder="请再次输入新密码" autocomplete="new-password" />
+                <span v-if="passwordErrors.confirmPassword" class="form-error">{{ passwordErrors.confirmPassword }}</span>
+              </div>
+              <div class="password-hint">密码需至少 8 位，且包含字母与数字</div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" @click="closePasswordDialog">取消</button>
+            <button class="btn btn-primary" :disabled="changingPassword || !isPasswordFormValid" @click="handleChangePassword">
+              <span v-if="changingPassword" class="btn-loading"></span>
+              {{ changingPassword ? '修改中...' : '确认修改' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { prefetchChunk } from '@/prefetch'
+import { ElMessage } from '@/utils/toast'
+import api from '@/api'
 
 const route = useRoute()
 const router = useRouter()
@@ -318,6 +372,33 @@ const userStore = useUserStore()
 
 const isCollapse = ref(false)
 const showDropdown = ref(false)
+const passwordDialogVisible = ref(false)
+const changingPassword = ref(false)
+
+const passwordForm = reactive({
+  oldPassword: '',
+  newPassword: '',
+  confirmPassword: ''
+})
+
+const passwordErrors = reactive({
+  oldPassword: '',
+  newPassword: '',
+  confirmPassword: ''
+})
+
+const hasMinLength = computed(() => passwordForm.newPassword.length >= 8)
+const hasLetter = computed(() => /[a-zA-Z]/.test(passwordForm.newPassword))
+const hasDigit = computed(() => /\d/.test(passwordForm.newPassword))
+
+const isPasswordFormValid = computed(() => {
+  return passwordForm.oldPassword &&
+    hasMinLength.value &&
+    hasLetter.value &&
+    hasDigit.value &&
+    passwordForm.confirmPassword &&
+    passwordForm.confirmPassword === passwordForm.newPassword
+})
 
 // 页面标题映射
 const pageTitles = {
@@ -373,6 +454,65 @@ function handleLogout() {
   showDropdown.value = false
   userStore.logout()
   router.push('/login')
+}
+
+function openPasswordDialog() {
+  showDropdown.value = false
+  passwordDialogVisible.value = true
+}
+
+function closePasswordDialog() {
+  passwordDialogVisible.value = false
+  passwordForm.oldPassword = ''
+  passwordForm.newPassword = ''
+  passwordForm.confirmPassword = ''
+  passwordErrors.oldPassword = ''
+  passwordErrors.newPassword = ''
+  passwordErrors.confirmPassword = ''
+}
+
+function validatePasswordForm() {
+  passwordErrors.oldPassword = ''
+  passwordErrors.newPassword = ''
+  passwordErrors.confirmPassword = ''
+
+  let valid = true
+  if (!passwordForm.oldPassword) {
+    passwordErrors.oldPassword = '请输入当前密码'
+    valid = false
+  }
+  if (!passwordForm.newPassword) {
+    passwordErrors.newPassword = '请输入新密码'
+    valid = false
+  } else if (!hasMinLength.value || !hasLetter.value || !hasDigit.value) {
+    passwordErrors.newPassword = '密码强度不足'
+    valid = false
+  }
+  if (!passwordForm.confirmPassword) {
+    passwordErrors.confirmPassword = '请确认新密码'
+    valid = false
+  } else if (passwordForm.confirmPassword !== passwordForm.newPassword) {
+    passwordErrors.confirmPassword = '两次输入的密码不一致'
+    valid = false
+  }
+  return valid
+}
+
+async function handleChangePassword() {
+  if (!validatePasswordForm()) return
+  changingPassword.value = true
+  try {
+    await api.changePassword({
+      old_password: passwordForm.oldPassword,
+      new_password: passwordForm.newPassword
+    })
+    ElMessage.success('密码修改成功')
+    closePasswordDialog()
+  } catch {
+    // 错误已在 API 层处理
+  } finally {
+    changingPassword.value = false
+  }
 }
 
 // 点击外部关闭下拉菜单指令
@@ -662,6 +802,106 @@ const vClickOutside = {
   height: 1px;
   background: var(--apple-separator);
   margin: var(--apple-spacing-xs) 0;
+}
+
+/* 弹窗 */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+
+.modal {
+  background: var(--apple-bg-primary);
+  border-radius: var(--apple-radius-lg);
+  box-shadow: var(--apple-shadow-lg);
+  border: 1px solid var(--apple-separator);
+  width: 420px;
+  max-width: calc(100vw - 32px);
+  overflow: hidden;
+}
+
+.modal-sm {
+  width: 420px;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--apple-spacing-lg);
+  border-bottom: 1px solid var(--apple-separator);
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: var(--apple-text-lg);
+}
+
+.modal-close {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--apple-text-tertiary);
+}
+
+.modal-close svg {
+  width: 18px;
+  height: 18px;
+}
+
+.modal-body {
+  padding: var(--apple-spacing-lg);
+}
+
+.modal-footer {
+  padding: var(--apple-spacing-md) var(--apple-spacing-lg);
+  border-top: 1px solid var(--apple-separator);
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--apple-spacing-sm);
+}
+
+.form-group {
+  margin-bottom: var(--apple-spacing-md);
+}
+
+.form-label {
+  display: block;
+  font-size: var(--apple-text-sm);
+  color: var(--apple-text-secondary);
+  margin-bottom: var(--apple-spacing-xs);
+}
+
+.form-input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: var(--apple-radius-md);
+  border: 1px solid var(--apple-separator);
+  background: var(--apple-bg-secondary);
+  color: var(--apple-text-primary);
+  outline: none;
+}
+
+.form-input:focus {
+  border-color: var(--apple-blue);
+  background: var(--apple-bg-primary);
+}
+
+.form-error {
+  display: block;
+  margin-top: 6px;
+  font-size: var(--apple-text-xs);
+  color: var(--apple-red);
+}
+
+.password-hint {
+  font-size: var(--apple-text-xs);
+  color: var(--apple-text-tertiary);
 }
 
 /* 内容区 */

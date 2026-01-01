@@ -29,6 +29,7 @@ func RegisterRoutes(r *gin.Engine) {
 
 	// 初始化处理器
 	adminHandler := NewAdminHandler()
+	captchaHandler := NewCaptchaHandler()
 	accountHandler := NewAccountHandler()
 	proxyHandler := NewProxyHandler()
 	requestLogHandler := NewRequestLogHandler()
@@ -56,6 +57,18 @@ func RegisterRoutes(r *gin.Engine) {
 	auth := r.Group("/api/auth")
 	{
 		auth.POST("/login", adminHandler.Login)
+		auth.GET("/captcha", captchaHandler.Generate) // 生成验证码
+	}
+
+	// 管理员状态接口（需要 JWT 认证）
+	adminStatus := r.Group("/api/admin")
+	adminStatus.Use(middleware.JWTAuth())
+	adminStatus.Use(middleware.AdminRequired())
+	adminStatus.Use(middleware.MustChangePasswordGuard())
+	{
+		adminStatus.GET("/status", adminHandler.GetStatus)                         // 获取管理员状态
+		adminStatus.POST("/force-change-password", adminHandler.ForceChangePassword) // 首次强制修改密码
+		adminStatus.PUT("/password", adminHandler.ChangePassword)                   // 修改密码
 	}
 
 	// ========== 代理转发接口 (需要 API Key 认证) ==========
@@ -106,6 +119,7 @@ func RegisterRoutes(r *gin.Engine) {
 	// 需要认证的接口（管理员）
 	admin := r.Group("/api/admin")
 	admin.Use(middleware.JWTAuth())
+	admin.Use(middleware.MustChangePasswordGuard())
 	admin.Use(middleware.AdminRequired())
 	{
 		// API Key 管理（管理员直接管理）

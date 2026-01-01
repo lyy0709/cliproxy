@@ -12,6 +12,7 @@ package service
 
 import (
 	"errors"
+	"strings"
 	"sync"
 	"time"
 
@@ -40,6 +41,20 @@ func NewAPIKeyService() *APIKeyService {
 	return &APIKeyService{
 		repo: repository.NewAPIKeyRepository(),
 	}
+}
+
+func normalizeCreateAPIKeyInput(req *CreateAPIKeyRequest) (int, string) {
+	rateLimit := req.RateLimit
+	if rateLimit < 0 {
+		rateLimit = 0
+	}
+
+	allowedPlatforms := "all"
+	if strings.TrimSpace(req.AllowedPlatforms) != "" {
+		allowedPlatforms = req.AllowedPlatforms
+	}
+
+	return rateLimit, allowedPlatforms
 }
 
 // CreateAPIKeyRequest 创建 API Key 请求
@@ -75,16 +90,8 @@ func (s *APIKeyService) Create(req *CreateAPIKeyRequest) (*CreateAPIKeyResponse,
 		return nil, errors.New("生成 API Key 失败")
 	}
 
-	// 设置默认值
-	rateLimit := 60
-	if req.RateLimit > 0 {
-		rateLimit = req.RateLimit
-	}
-
-	allowedPlatforms := "all"
-	if req.AllowedPlatforms != "" {
-		allowedPlatforms = req.AllowedPlatforms
-	}
+	// 设置默认值（0 表示不限制）
+	rateLimit, allowedPlatforms := normalizeCreateAPIKeyInput(req)
 
 	apiKey := &model.APIKey{
 		Name:             req.Name,
@@ -231,7 +238,9 @@ func (s *APIKeyService) Update(id uint, req *UpdateAPIKeyRequest) (*model.APIKey
 	key.BlockedModels = req.BlockedModels
 	key.AllowedClients = req.AllowedClients
 
-	if req.RateLimit > 0 {
+	if req.RateLimit < 0 {
+		key.RateLimit = 0
+	} else {
 		key.RateLimit = req.RateLimit
 	}
 	key.DailyLimit = req.DailyLimit

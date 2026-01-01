@@ -19,7 +19,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net"
 	"net/http"
 	"net/url"
@@ -28,6 +27,7 @@ import (
 
 	"cli-proxy/internal/model"
 	"cli-proxy/pkg/logger"
+	"cli-proxy/pkg/utils"
 
 	utls "github.com/refraction-networking/utls"
 	"golang.org/x/net/proxy"
@@ -278,7 +278,7 @@ func (s *OAuthAuthService) getOrganizationInfo(ctx context.Context, sessionKey s
 	}
 	defer resp.Body.Close()
 
-	body, _ := io.ReadAll(resp.Body)
+	body, _ := utils.ReadAllWithLimit(resp.Body, utils.MaxResponseBodyBytes)
 	if resp.StatusCode != 200 {
 		bodyLen := len(body)
 		if bodyLen > 500 {
@@ -333,7 +333,7 @@ func (s *OAuthAuthService) authorizeWithCookie(ctx context.Context, sessionKey, 
 	}
 	defer resp.Body.Close()
 
-	body, _ := io.ReadAll(resp.Body)
+	body, _ := utils.ReadAllWithLimit(resp.Body, utils.MaxResponseBodyBytes)
 	if resp.StatusCode != 200 {
 		bodyLen := len(body)
 		if bodyLen > 500 {
@@ -400,7 +400,7 @@ func (s *OAuthAuthService) exchangeToken(ctx context.Context, code, verifier, st
 	}
 	defer resp.Body.Close()
 
-	body, _ := io.ReadAll(resp.Body)
+	body, _ := utils.ReadAllWithLimit(resp.Body, utils.MaxResponseBodyBytes)
 	if resp.StatusCode != 200 {
 		return nil, fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))
 	}

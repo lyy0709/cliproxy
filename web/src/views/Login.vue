@@ -78,6 +78,37 @@
           <span v-if="errors.password" class="form-error">{{ errors.password }}</span>
         </div>
 
+        <!-- 验证码 -->
+        <div v-if="captchaEnabled" class="form-group">
+          <label class="form-label">验证码</label>
+          <div class="captcha-row">
+            <div class="input-wrapper captcha-input">
+              <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+              </svg>
+              <input
+                v-model="form.captchaCode"
+                type="text"
+                class="form-input"
+                placeholder="请输入验证码"
+                autocomplete="off"
+                @keyup.enter="handleLogin"
+              />
+            </div>
+            <div class="captcha-image-wrapper" @click="refreshCaptcha" :title="captchaLoading ? '加载中...' : '点击刷新'">
+              <img v-if="captchaImage" :src="captchaImage" alt="验证码" class="captcha-image" />
+              <div v-else class="captcha-placeholder">
+                <svg v-if="captchaLoading" class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10" stroke-opacity="0.25"/>
+                  <path d="M12 2a10 10 0 019.95 9" stroke-linecap="round"/>
+                </svg>
+                <span v-else>加载中</span>
+              </div>
+            </div>
+          </div>
+          <span v-if="errors.captcha" class="form-error">{{ errors.captcha }}</span>
+        </div>
+
         <!-- 登录按钮 -->
         <button type="submit" class="login-btn" :disabled="loading">
           <svg v-if="loading" class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -103,26 +134,54 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { ElMessage } from '@/utils/toast'
+import api from '@/api'
 
 const router = useRouter()
 const userStore = useUserStore()
 
 const loading = ref(false)
 const showPassword = ref(false)
+const captchaLoading = ref(false)
+const captchaImage = ref('')
+const captchaId = ref('')
+const captchaEnabled = ref(true)
 
 const form = reactive({
   username: '',
-  password: ''
+  password: '',
+  captchaCode: ''
 })
 
 const errors = reactive({
   username: '',
-  password: ''
+  password: '',
+  captcha: ''
 })
+
+// 获取验证码
+async function refreshCaptcha() {
+  captchaLoading.value = true
+  try {
+    const res = await api.getCaptcha()
+    if (res.data.enabled === false) {
+      captchaEnabled.value = false
+      captchaId.value = ''
+      captchaImage.value = ''
+      return
+    }
+    captchaEnabled.value = true
+    captchaId.value = res.data.captcha_id || ''
+    captchaImage.value = res.data.image || ''
+  } catch {
+    ElMessage.error('获取验证码失败')
+  } finally {
+    captchaLoading.value = false
+  }
+}
 
 function validate() {
   let valid = true
@@ -140,6 +199,16 @@ function validate() {
     valid = false
   }
 
+  if (captchaEnabled.value) {
+    if (!captchaId.value) {
+      errors.captcha = '验证码未加载，请刷新'
+      valid = false
+    } else if (!form.captchaCode.trim()) {
+      errors.captcha = '请输入验证码'
+      valid = false
+    }
+  }
+
   return valid
 }
 
@@ -152,14 +221,31 @@ async function handleLogin() {
       username: form.username,
       password: form.password
     }
-    await userStore.login(loginData)
+    if (captchaEnabled.value) {
+      loginData.captcha_id = captchaId.value
+      loginData.captcha_code = form.captchaCode
+    }
+    const res = await userStore.login(loginData)
     ElMessage.success('登录成功')
-    router.push('/dashboard')
+
+    // 检查是否需要强制修改密码
+    if (res.data.must_change_password) {
+      router.push('/force-change-password')
+    } else {
+      router.push('/admin/system-monitor')
+    }
   } catch {
+    // 登录失败，刷新验证码
+    refreshCaptcha()
+    form.captchaCode = ''
   } finally {
     loading.value = false
   }
 }
+
+onMounted(() => {
+  refreshCaptcha()
+})
 </script>
 
 <style scoped>
@@ -366,19 +452,26 @@ async function handleLogin() {
   justify-content: center;
   flex-shrink: 0;
   border: 1px solid var(--apple-separator);
+  overflow: hidden;
+  transition: all var(--apple-duration-fast) var(--apple-ease-default);
+}
+
+.captcha-image-wrapper:hover {
+  border-color: var(--apple-blue);
 }
 
 .captcha-image {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  border-radius: var(--apple-radius-xs);
 }
 
 .captcha-placeholder {
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: var(--apple-text-xs);
+  color: var(--apple-text-tertiary);
 }
 
 /* 登录按钮 */

@@ -32,6 +32,7 @@ import (
 	"cli-proxy/internal/service"
 	"cli-proxy/pkg/logger"
 	"cli-proxy/pkg/response"
+	"cli-proxy/pkg/utils"
 
 	"github.com/gin-gonic/gin"
 )
@@ -556,8 +557,18 @@ func (h *ProxyHandler) handleClaudeStreamWithRetry(c *gin.Context, req *adapter.
 // 强制只从 Claude 平台账户中选择，不做平台自动检测
 func (h *ProxyHandler) ClaudeMessages(c *gin.Context) {
 	// 1. 读取原始请求体（不做任何解析）
-	rawBody, err := io.ReadAll(c.Request.Body)
+	rawBody, err := utils.ReadAllWithLimit(c.Request.Body, utils.MaxRequestBodyBytes)
 	if err != nil {
+		if err == utils.ErrBodyTooLarge {
+			c.JSON(http.StatusRequestEntityTooLarge, gin.H{
+				"type": "error",
+				"error": gin.H{
+					"type":    "invalid_request_error",
+					"message": "request body too large",
+				},
+			})
+			return
+		}
 		c.JSON(http.StatusBadRequest, gin.H{
 			"type": "error",
 			"error": gin.H{
@@ -631,8 +642,12 @@ func (h *ProxyHandler) ClaudeMessages(c *gin.Context) {
 // 强制只从 OpenAI 平台账户中选择，不做平台自动检测
 func (h *ProxyHandler) OpenAIChatCompletions(c *gin.Context) {
 	// 读取原始请求体用于日志记录
-	rawBody, err := io.ReadAll(c.Request.Body)
+	rawBody, err := utils.ReadAllWithLimit(c.Request.Body, utils.MaxRequestBodyBytes)
 	if err != nil {
+		if err == utils.ErrBodyTooLarge {
+			response.CustomError(c, http.StatusRequestEntityTooLarge, model.ErrorTypeBadRequest, "request body too large")
+			return
+		}
 		response.CustomBadRequest(c, "failed to read request body")
 		return
 	}
@@ -690,8 +705,18 @@ func convertStopReason(reason string) string {
 // GeminiChat Gemini 原生格式接口 POST /gemini/v1/chat
 func (h *ProxyHandler) GeminiChat(c *gin.Context) {
 	// 读取原始请求体用于日志记录
-	rawBody, err := io.ReadAll(c.Request.Body)
+	rawBody, err := utils.ReadAllWithLimit(c.Request.Body, utils.MaxRequestBodyBytes)
 	if err != nil {
+		if err == utils.ErrBodyTooLarge {
+			c.JSON(http.StatusRequestEntityTooLarge, gin.H{
+				"error": gin.H{
+					"code":    http.StatusRequestEntityTooLarge,
+					"message": "request body too large",
+					"status":  "REQUEST_ENTITY_TOO_LARGE",
+				},
+			})
+			return
+		}
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": gin.H{
 				"code":    400,

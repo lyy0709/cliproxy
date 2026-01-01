@@ -17,8 +17,11 @@
           <span class="logo-text">Cli-Proxy</span>
         </div>
         <div class="nav-actions">
-          <router-link to="/register" class="register-btn">
-            <span>注册</span>
+          <router-link to="/usage-query" class="query-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+            <span>查询用量</span>
           </router-link>
           <router-link to="/login" class="login-btn">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -26,7 +29,7 @@
               <polyline points="10,17 15,12 10,7"/>
               <line x1="15" y1="12" x2="3" y2="12"/>
             </svg>
-            <span>登录</span>
+            <span>管理后台</span>
           </router-link>
         </div>
       </div>
@@ -39,14 +42,11 @@
         <h1 class="hero-title">统一的 AI API 接入</h1>
         <p class="hero-subtitle">支持 Claude、OpenAI、Gemini 多平台，一个端点搞定所有</p>
         <div class="hero-actions">
-          <router-link to="/register" class="hero-btn primary">
+          <router-link to="/usage-query" class="hero-btn primary">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
-              <circle cx="8.5" cy="7" r="4"/>
-              <line x1="20" y1="8" x2="20" y2="14"/>
-              <line x1="23" y1="11" x2="17" y2="11"/>
+              <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
             </svg>
-            免费注册
+            查询用量
           </router-link>
           <router-link to="/login" class="hero-btn secondary">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -54,7 +54,7 @@
               <polyline points="10,17 15,12 10,7"/>
               <line x1="15" y1="12" x2="3" y2="12"/>
             </svg>
-            登录后台
+            管理后台
           </router-link>
         </div>
       </section>
@@ -265,7 +265,10 @@ const copyText = async (text) => {
   gap: var(--apple-spacing-sm);
 }
 
-.register-btn {
+.query-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--apple-spacing-xs);
   padding: var(--apple-spacing-xs) var(--apple-spacing-md);
   color: var(--apple-blue);
   border-radius: var(--apple-radius-full);
@@ -275,7 +278,12 @@ const copyText = async (text) => {
   transition: all var(--apple-duration-fast) var(--apple-ease-default);
 }
 
-.register-btn:hover {
+.query-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.query-btn:hover {
   background: var(--apple-blue-light);
 }
 
@@ -584,7 +592,7 @@ const copyText = async (text) => {
     gap: var(--apple-spacing-xs);
   }
 
-  .register-btn {
+  .query-btn {
     padding: var(--apple-spacing-xs) var(--apple-spacing-sm);
   }
 

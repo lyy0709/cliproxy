@@ -15,7 +15,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"sync"
@@ -23,6 +22,7 @@ import (
 
 	"cli-proxy/internal/model"
 	"cli-proxy/internal/repository"
+	"cli-proxy/pkg/utils"
 )
 
 // TokenManager OAuth Token 管理器
@@ -125,7 +125,7 @@ func (m *TokenManager) refreshClaudeOfficialToken(ctx context.Context, account *
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := utils.ReadAllWithLimit(resp.Body, utils.MaxResponseBodyBytes)
 		return fmt.Errorf("token refresh failed: %s", string(body))
 	}
 
@@ -184,7 +184,7 @@ func (m *TokenManager) refreshGeminiToken(ctx context.Context, account *model.Ac
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := utils.ReadAllWithLimit(resp.Body, utils.MaxResponseBodyBytes)
 		return fmt.Errorf("token refresh failed: %s", string(body))
 	}
 

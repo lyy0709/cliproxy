@@ -19,7 +19,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net"
 	"net/http"
 	"net/url"
@@ -29,6 +28,7 @@ import (
 
 	"cli-proxy/internal/service"
 	"cli-proxy/pkg/logger"
+	"cli-proxy/pkg/utils"
 
 	"github.com/gin-gonic/gin"
 	utls "github.com/refraction-networking/utls"
@@ -314,11 +314,11 @@ func authenticateWithSessionKey(sessionKey string, proxyConfig *ProxyConfig) (ma
 	logger.Info("[oauth] Token 交换成功")
 
 	// 记录返回的 token 信息（隐藏敏感部分）
-	if accessToken, ok := tokenData["access_token"].(string); ok && len(accessToken) > 20 {
-		logger.Info("[oauth] 获取到 access_token: %s...%s (长度: %d)", accessToken[:10], accessToken[len(accessToken)-5:], len(accessToken))
+	if accessToken, ok := tokenData["access_token"].(string); ok && accessToken != "" {
+		logger.Info("[oauth] 获取到 access_token: %s (长度: %d)", utils.MaskToken(accessToken), len(accessToken))
 	}
-	if refreshToken, ok := tokenData["refresh_token"].(string); ok && len(refreshToken) > 20 {
-		logger.Info("[oauth] 获取到 refresh_token: %s...%s (长度: %d)", refreshToken[:10], refreshToken[len(refreshToken)-5:], len(refreshToken))
+	if refreshToken, ok := tokenData["refresh_token"].(string); ok && refreshToken != "" {
+		logger.Info("[oauth] 获取到 refresh_token: %s (长度: %d)", utils.MaskToken(refreshToken), len(refreshToken))
 	}
 	if expiresIn, ok := tokenData["expires_in"]; ok {
 		logger.Info("[oauth] token 过期时间: %v 秒", expiresIn)
@@ -401,7 +401,7 @@ func getOrganizationInfo(sessionKey string, proxyConfig *ProxyConfig) (string, [
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := utils.ReadAllWithLimit(resp.Body, utils.MaxResponseBodyBytes)
 		return "", nil, fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))
 	}
 
@@ -469,7 +469,7 @@ func authorizeWithCookie(sessionKey, orgUUID, challenge, state string, proxyConf
 	}
 	defer resp.Body.Close()
 
-	body, _ := io.ReadAll(resp.Body)
+	body, _ := utils.ReadAllWithLimit(resp.Body, utils.MaxResponseBodyBytes)
 	logger.Info("[oauth] 授权响应状态: %d, 长度: %d", resp.StatusCode, len(body))
 
 	if resp.StatusCode != http.StatusOK {
@@ -562,7 +562,7 @@ func exchangeClaudeToken(code, verifier string, proxyConfig *ProxyConfig) (map[s
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := utils.ReadAllWithLimit(resp.Body, utils.MaxResponseBodyBytes)
 		return nil, fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))
 	}
 
@@ -604,7 +604,7 @@ func exchangeOpenAIToken(code, verifier string, proxyConfig *ProxyConfig) (map[s
 	}
 	defer resp.Body.Close()
 
-	body, _ := io.ReadAll(resp.Body)
+	body, _ := utils.ReadAllWithLimit(resp.Body, utils.MaxResponseBodyBytes)
 	logger.Debug("[oauth] OpenAI Token 响应状态: %d, 长度: %d", resp.StatusCode, len(body))
 
 	if resp.StatusCode != http.StatusOK {
@@ -618,11 +618,11 @@ func exchangeOpenAIToken(code, verifier string, proxyConfig *ProxyConfig) (map[s
 	}
 
 	// 记录返回的 token 信息（隐藏敏感部分）
-	if accessToken, ok := tokenData["access_token"].(string); ok && len(accessToken) > 20 {
-		logger.Info("[oauth] OpenAI 获取到 access_token: %s...%s (长度: %d)", accessToken[:10], accessToken[len(accessToken)-5:], len(accessToken))
+	if accessToken, ok := tokenData["access_token"].(string); ok && accessToken != "" {
+		logger.Info("[oauth] OpenAI 获取到 access_token: %s (长度: %d)", utils.MaskToken(accessToken), len(accessToken))
 	}
-	if refreshToken, ok := tokenData["refresh_token"].(string); ok && len(refreshToken) > 20 {
-		logger.Info("[oauth] OpenAI 获取到 refresh_token: %s...%s (长度: %d)", refreshToken[:10], refreshToken[len(refreshToken)-5:], len(refreshToken))
+	if refreshToken, ok := tokenData["refresh_token"].(string); ok && refreshToken != "" {
+		logger.Info("[oauth] OpenAI 获取到 refresh_token: %s (长度: %d)", utils.MaskToken(refreshToken), len(refreshToken))
 	}
 	if expiresIn, ok := tokenData["expires_in"]; ok {
 		logger.Info("[oauth] OpenAI token 过期时间: %v 秒", expiresIn)

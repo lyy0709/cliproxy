@@ -15,7 +15,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"strings"
 	"sync"
@@ -26,6 +25,7 @@ import (
 	"cli-proxy/internal/proxy/scheduler"
 	"cli-proxy/internal/repository"
 	"cli-proxy/pkg/logger"
+	"cli-proxy/pkg/utils"
 )
 
 // AccountHealthCheckService 账号健康检查服务
@@ -783,7 +783,7 @@ func (s *AccountHealthCheckService) checkClaudeOAuth(ctx context.Context, accoun
 	}
 	defer resp.Body.Close()
 
-	body, _ := io.ReadAll(resp.Body)
+	body, _ := utils.ReadAllWithLimit(resp.Body, utils.MaxResponseBodyBytes)
 
 	// 检查状态码
 	if resp.StatusCode == 200 {
@@ -843,7 +843,7 @@ func (s *AccountHealthCheckService) checkClaudeSessionKey(ctx context.Context, a
 	defer resp.Body.Close()
 
 	// 读取响应体（用于错误信息）
-	body, _ := io.ReadAll(resp.Body)
+	body, _ := utils.ReadAllWithLimit(resp.Body, utils.MaxResponseBodyBytes)
 
 	// 检查状态码
 	if resp.StatusCode == 200 {
@@ -894,7 +894,7 @@ func (s *AccountHealthCheckService) checkOpenAIResponses(ctx context.Context, ac
 		}
 		defer resp.Body.Close()
 
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := utils.ReadAllWithLimit(resp.Body, utils.MaxResponseBodyBytes)
 
 		if resp.StatusCode == 200 {
 			return true, ""
@@ -959,7 +959,7 @@ func (s *AccountHealthCheckService) checkChatGPTOAuth(ctx context.Context, accou
 	}
 	defer resp.Body.Close()
 
-	body, _ := io.ReadAll(resp.Body)
+	body, _ := utils.ReadAllWithLimit(resp.Body, utils.MaxResponseBodyBytes)
 
 	// 检查状态码
 	if resp.StatusCode == 200 {
@@ -1048,7 +1048,7 @@ func (s *AccountHealthCheckService) checkGemini(ctx context.Context, account *mo
 	}
 	defer resp.Body.Close()
 
-	body, _ := io.ReadAll(resp.Body)
+	body, _ := utils.ReadAllWithLimit(resp.Body, utils.MaxResponseBodyBytes)
 
 	if resp.StatusCode == 200 {
 		return true, ""

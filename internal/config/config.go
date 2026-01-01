@@ -23,13 +23,12 @@ type Config struct {
 	JWT    JWTConfig    `yaml:"jwt"`
 	Log    LogConfig    `yaml:"log"`
 	Cache  CacheConfig  `yaml:"cache"`
-	Admin  AdminConfig  `yaml:"admin"`
+	Security SecurityConfig `yaml:"security"`
 }
 
-// AdminConfig 管理员配置
-type AdminConfig struct {
-	Username string `yaml:"username"` // 管理员用户名
-	Password string `yaml:"password"` // 管理员密码（bcrypt 加密后的哈希）
+// SecurityConfig 安全相关配置
+type SecurityConfig struct {
+	DataKey string `yaml:"data_key"` // 敏感数据加密密钥
 }
 
 type ServerConfig struct {
@@ -138,6 +137,11 @@ func overrideFromEnv() {
 		Cfg.JWT.Secret = secret
 	}
 
+	// 数据加密密钥
+	if dataKey := os.Getenv("DATA_ENCRYPTION_KEY"); dataKey != "" {
+		Cfg.Security.DataKey = dataKey
+	}
+
 	// MySQL 配置
 	if host := os.Getenv("DB_HOST"); host != "" {
 		Cfg.MySQL.Host = host
@@ -150,15 +154,5 @@ func overrideFromEnv() {
 	}
 	if database := os.Getenv("DB_NAME"); database != "" {
 		Cfg.MySQL.Database = database
-	}
-
-	// 管理员配置
-	if username := os.Getenv("ADMIN_USERNAME"); username != "" {
-		Cfg.Admin.Username = username
-	}
-	if password := os.Getenv("ADMIN_PASSWORD_HASH"); password != "" {
-		Cfg.Admin.Password = password
-	} else if password := os.Getenv("ADMIN_PASSWORD"); password != "" {
-		Cfg.Admin.Password = password
 	}
 }

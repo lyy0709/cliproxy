@@ -26,7 +26,7 @@ func NewAPIKeyRepository() *APIKeyRepository {
 
 // Create 创建 API Key
 func (r *APIKeyRepository) Create(key *model.APIKey) error {
-	return r.db.Create(key).Error
+	return r.db.Select("*").Create(key).Error
 }
 
 // GetByID 根据 ID 获取 API Key

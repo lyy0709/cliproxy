@@ -14,6 +14,8 @@ package model
 import (
 	"time"
 
+	"cli-proxy/pkg/utils"
+
 	"gorm.io/gorm"
 )
 
@@ -134,6 +136,70 @@ type Account struct {
 
 func (a *Account) TableName() string {
 	return "accounts"
+}
+
+// BeforeSave 保存前加密敏感字段
+func (a *Account) BeforeSave(tx *gorm.DB) error {
+	var err error
+
+	if a.APIKey, err = utils.EncryptString(a.APIKey); err != nil {
+		return err
+	}
+	if a.APISecret, err = utils.EncryptString(a.APISecret); err != nil {
+		return err
+	}
+	if a.AccessToken, err = utils.EncryptString(a.AccessToken); err != nil {
+		return err
+	}
+	if a.RefreshToken, err = utils.EncryptString(a.RefreshToken); err != nil {
+		return err
+	}
+	if a.SessionKey, err = utils.EncryptString(a.SessionKey); err != nil {
+		return err
+	}
+	if a.AWSAccessKey, err = utils.EncryptString(a.AWSAccessKey); err != nil {
+		return err
+	}
+	if a.AWSSecretKey, err = utils.EncryptString(a.AWSSecretKey); err != nil {
+		return err
+	}
+	if a.AWSSessionToken, err = utils.EncryptString(a.AWSSessionToken); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// AfterFind 查询后解密敏感字段
+func (a *Account) AfterFind(tx *gorm.DB) error {
+	var err error
+
+	if a.APIKey, err = utils.DecryptString(a.APIKey); err != nil {
+		return err
+	}
+	if a.APISecret, err = utils.DecryptString(a.APISecret); err != nil {
+		return err
+	}
+	if a.AccessToken, err = utils.DecryptString(a.AccessToken); err != nil {
+		return err
+	}
+	if a.RefreshToken, err = utils.DecryptString(a.RefreshToken); err != nil {
+		return err
+	}
+	if a.SessionKey, err = utils.DecryptString(a.SessionKey); err != nil {
+		return err
+	}
+	if a.AWSAccessKey, err = utils.DecryptString(a.AWSAccessKey); err != nil {
+		return err
+	}
+	if a.AWSSecretKey, err = utils.DecryptString(a.AWSSecretKey); err != nil {
+		return err
+	}
+	if a.AWSSessionToken, err = utils.DecryptString(a.AWSSessionToken); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // GetPlatformByType 根据账户类型获取平台

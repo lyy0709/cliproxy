@@ -40,7 +40,7 @@ type APIKey struct {
 	AllowedClients   string `gorm:"size:200" json:"allowed_clients,omitempty"`     // 允许的客户端类型 (逗号分隔, 如: claude_code,codex_cli)
 
 	// 限制配置
-	RateLimit     int        `gorm:"default:60" json:"rate_limit"`               // 每分钟请求限制
+	RateLimit     int        `gorm:"default:0" json:"rate_limit"`                // 每分钟请求限制（0=不限）
 	DailyLimit    int        `gorm:"default:0" json:"daily_limit"`               // 每日请求限制 (0=不限)
 	MonthlyQuota  float64    `gorm:"type:decimal(10,2);default:0" json:"monthly_quota"` // 月额度 (美元，0=不限)
 	ExpiresAt     *time.Time `json:"expires_at,omitempty"`                       // 过期时间

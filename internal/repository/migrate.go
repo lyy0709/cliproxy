@@ -37,6 +37,8 @@ func AutoMigrate() error {
 		&model.ErrorRule{},
 		// 模型映射
 		&model.ModelMapping{},
+		// 管理员配置
+		&model.AdminConfig{},
 	)
 }
 
@@ -78,4 +80,16 @@ func InitDefaultErrorMessages() error {
 func InitDefaultErrorRules() error {
 	repo := NewErrorRuleRepository()
 	return repo.InitDefaultRules()
+}
+
+// InitDefaultAdmin 初始化默认管理员账户（密码: admin123，首次登录需修改）
+func InitDefaultAdmin() error {
+	repo := NewAdminConfigRepository(DB)
+	return repo.InitializeDefaultAdmin()
+}
+
+// EncryptAccountSecrets 加密已有账号的敏感字段
+func EncryptAccountSecrets() error {
+	repo := NewAccountRepository()
+	return repo.EncryptExistingSecrets()
 }

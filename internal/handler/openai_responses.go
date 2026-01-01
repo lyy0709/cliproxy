@@ -30,6 +30,7 @@ import (
 	"cli-proxy/internal/service"
 	"cli-proxy/pkg/logger"
 	"cli-proxy/pkg/response"
+	"cli-proxy/pkg/utils"
 
 	"github.com/gin-gonic/gin"
 )
@@ -105,8 +106,12 @@ func (h *OpenAIResponsesHandler) HandleResponses(c *gin.Context) {
 	log := logger.GetLogger("openai-responses")
 
 	// 读取原始请求体
-	rawBody, err := io.ReadAll(c.Request.Body)
+	rawBody, err := utils.ReadAllWithLimit(c.Request.Body, utils.MaxRequestBodyBytes)
 	if err != nil {
+		if err == utils.ErrBodyTooLarge {
+			response.Error(c, http.StatusRequestEntityTooLarge, "请求体过大")
+			return
+		}
 		response.CustomBadRequest(c, "failed to read request body")
 		return
 	}
@@ -308,7 +313,12 @@ func (h *OpenAIResponsesHandler) setRequestHeaders(httpReq *http.Request, c *gin
 
 // handleErrorResponse 处理错误响应
 func (h *OpenAIResponsesHandler) handleErrorResponse(c *gin.Context, resp *http.Response, account *model.Account, log *logger.Logger) {
-	respBody, _ := io.ReadAll(resp.Body)
+	respBody, err := utils.ReadAllWithLimit(resp.Body, utils.MaxResponseBodyBytes)
+	if err != nil {
+		log.Error("API 错误 - StatusCode: %d, Body: <read_failed> err=%v", resp.StatusCode, err)
+		response.CustomError(c, http.StatusBadGateway, "upstream_error", "读取上游错误响应失败")
+		return
+	}
 	log.Error("API 错误 - StatusCode: %d, Body: %s", resp.StatusCode, string(respBody))
 
 	// 尝试解析错误响应
@@ -522,7 +532,7 @@ func (h *OpenAIResponsesHandler) parseSSEForUsage(buffer *strings.Builder, actua
 
 // handleNormalResponse 处理非流式响应
 func (h *OpenAIResponsesHandler) handleNormalResponse(c *gin.Context, resp *http.Response, account *model.Account, userID, apiKeyID uint, modelName string, log *logger.Logger) {
-	respBody, err := io.ReadAll(resp.Body)
+	respBody, err := utils.ReadAllWithLimit(resp.Body, utils.MaxResponseBodyBytes)
 	if err != nil {
 		log.Error("读取响应失败: %v", err)
 		response.CustomError(c, http.StatusBadGateway, "upstream_error", err.Error())
