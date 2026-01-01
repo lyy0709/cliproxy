@@ -64,10 +64,10 @@ type Account struct {
 	Weight    int            `gorm:"default:100" json:"weight"`               // 权重
 
 	// 通用认证字段 (敏感信息，不序列化到 JSON)
-	APIKey       string     `gorm:"size:500" json:"-"`      // API Key
-	APISecret    string     `gorm:"size:500" json:"-"`      // API Secret
-	AccessToken  string     `gorm:"size:2000" json:"-"`     // Access Token
-	RefreshToken string     `gorm:"size:2000" json:"-"`     // Refresh Token
+	APIKey       string     `gorm:"type:text" json:"-"`     // API Key
+	APISecret    string     `gorm:"type:text" json:"-"`     // API Secret
+	AccessToken  string     `gorm:"type:text" json:"-"`     // Access Token
+	RefreshToken string     `gorm:"type:text" json:"-"`     // Refresh Token
 	TokenExpiry  *time.Time `json:"token_expiry,omitempty"` // Token 过期时间
 
 	// Claude Official 专用
@@ -77,10 +77,10 @@ type Account struct {
 	OpusAccess        bool   `gorm:"default:false" json:"opus_access"`             // 是否有 Opus 权限
 
 	// AWS Bedrock 专用 (敏感信息，不序列化)
-	AWSAccessKey    string `gorm:"size:100" json:"-"`
-	AWSSecretKey    string `gorm:"size:200" json:"-"`
+	AWSAccessKey    string `gorm:"type:text" json:"-"`
+	AWSSecretKey    string `gorm:"type:text" json:"-"`
 	AWSRegion       string `gorm:"size:30" json:"aws_region,omitempty"`
-	AWSSessionToken string `gorm:"size:2000" json:"-"`
+	AWSSessionToken string `gorm:"type:text" json:"-"`
 
 	// Azure OpenAI 专用
 	AzureEndpoint      string `gorm:"size:200" json:"azure_endpoint,omitempty"`
