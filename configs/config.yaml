@@ -1,0 +1,37 @@
+# Cli-Proxy 配置文件（Docker 默认配置）
+server:
+  port: 8080
+  mode: release
+
+mysql:
+  host: mysql
+  port: 3306
+  user: cli-proxy
+  password: cli-proxy-password
+  database: cli-proxy
+  charset: utf8mb4
+  max_idle_conns: 10
+  max_open_conns: 100
+
+jwt:
+  secret: cli-proxy-jwt-secret-change-in-production
+  expire_hours: 24
+
+log:
+  dir: logs
+  level: info
+
+cache:
+  session_ttl: 60
+  session_renewal_ttl: 14
+  unavailable_ttl: 5
+  concurrency_ttl: 5
+  default_concurrency_max: 5
+
+# 管理员配置
+admin:
+  username: admin
+  # 密码可以是明文或 bcrypt 哈希
+  # 明文: admin123
+  # bcrypt 哈希: $2a$10$... (推荐生产环境使用)
+  password: admin123

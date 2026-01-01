@@ -1,0 +1,218 @@
+/**
+ * Apple HIG Design System - CSS Variables
+ * 基于 Apple Human Interface Guidelines 的设计变量
+ */
+
+:root {
+  /* ========================================
+     颜色系统 - Light Mode
+     ======================================== */
+
+  /* 背景色 */
+  --apple-bg-primary: #ffffff;
+  --apple-bg-secondary: #f5f5f7;
+  --apple-bg-tertiary: #e8e8ed;
+  --apple-bg-grouped: #f2f2f7;
+  --apple-bg-elevated: #ffffff;
+
+  /* 毛玻璃效果背景 */
+  --apple-bg-blur: rgba(255, 255, 255, 0.72);
+  --apple-bg-blur-dark: rgba(29, 29, 31, 0.72);
+
+  /* 文字颜色 */
+  --apple-text-primary: #1d1d1f;
+  --apple-text-secondary: #86868b;
+  --apple-text-tertiary: #aeaeb2;
+  --apple-text-quaternary: #c7c7cc;
+  --apple-text-placeholder: #c7c7cc;
+
+  /* 强调色 */
+  --apple-blue: #007aff;
+  --apple-blue-hover: #0056b3;
+  --apple-blue-light: rgba(0, 122, 255, 0.1);
+
+  /* 语义色 */
+  --apple-green: #34c759;
+  --apple-green-light: rgba(52, 199, 89, 0.1);
+  --apple-orange: #ff9500;
+  --apple-orange-light: rgba(255, 149, 0, 0.1);
+  --apple-red: #ff3b30;
+  --apple-red-light: rgba(255, 59, 48, 0.1);
+  --apple-yellow: #ffcc00;
+  --apple-yellow-light: rgba(255, 204, 0, 0.1);
+  --apple-purple: #af52de;
+  --apple-purple-light: rgba(175, 82, 222, 0.1);
+  --apple-pink: #ff2d55;
+  --apple-teal: #5ac8fa;
+  --apple-indigo: #5856d6;
+
+  /* 分隔线 */
+  --apple-separator: rgba(60, 60, 67, 0.12);
+  --apple-separator-opaque: #c6c6c8;
+
+  /* 填充色 */
+  --apple-fill-primary: rgba(120, 120, 128, 0.2);
+  --apple-fill-secondary: rgba(120, 120, 128, 0.16);
+  --apple-fill-tertiary: rgba(120, 120, 128, 0.12);
+  --apple-fill-quaternary: rgba(120, 120, 128, 0.08);
+
+  /* ========================================
+     间距系统
+     ======================================== */
+  --apple-spacing-xxs: 4px;
+  --apple-spacing-xs: 8px;
+  --apple-spacing-sm: 12px;
+  --apple-spacing-md: 16px;
+  --apple-spacing-lg: 20px;
+  --apple-spacing-xl: 24px;
+  --apple-spacing-xxl: 32px;
+  --apple-spacing-xxxl: 40px;
+
+  /* ========================================
+     圆角系统
+     ======================================== */
+  --apple-radius-xs: 4px;
+  --apple-radius-sm: 8px;
+  --apple-radius-md: 12px;
+  --apple-radius-lg: 16px;
+  --apple-radius-xl: 20px;
+  --apple-radius-xxl: 24px;
+  --apple-radius-full: 9999px;
+
+  /* ========================================
+     字体系统 - San Francisco
+     ======================================== */
+  --apple-font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
+  --apple-font-mono: 'SF Mono', SFMono-Regular, ui-monospace, Menlo, Monaco, monospace;
+
+  /* 字体大小 */
+  --apple-text-xs: 11px;
+  --apple-text-sm: 13px;
+  --apple-text-base: 15px;
+  --apple-text-md: 17px;
+  --apple-text-lg: 20px;
+  --apple-text-xl: 22px;
+  --apple-text-2xl: 26px;
+  --apple-text-3xl: 32px;
+  --apple-text-4xl: 40px;
+  --apple-text-5xl: 48px;
+
+  /* 字重 */
+  --apple-font-regular: 400;
+  --apple-font-medium: 500;
+  --apple-font-semibold: 600;
+  --apple-font-bold: 700;
+
+  /* 行高 */
+  --apple-leading-tight: 1.2;
+  --apple-leading-normal: 1.47;
+  --apple-leading-relaxed: 1.6;
+
+  /* 字间距 */
+  --apple-tracking-tight: -0.02em;
+  --apple-tracking-normal: -0.01em;
+  --apple-tracking-wide: 0.02em;
+
+  /* ========================================
+     阴影系统
+     ======================================== */
+  --apple-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --apple-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --apple-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12);
+  --apple-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.16);
+  --apple-shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.2);
+
+  /* 卡片阴影 */
+  --apple-shadow-card: 0 2px 12px rgba(0, 0, 0, 0.08);
+  --apple-shadow-card-hover: 0 8px 24px rgba(0, 0, 0, 0.12);
+
+  /* 弹窗阴影 */
+  --apple-shadow-modal: 0 20px 60px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.05);
+
+  /* ========================================
+     动画系统
+     ======================================== */
+  --apple-duration-fast: 150ms;
+  --apple-duration-normal: 250ms;
+  --apple-duration-slow: 400ms;
+
+  /* Apple 标准缓动曲线 */
+  --apple-ease-default: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --apple-ease-in: cubic-bezier(0.42, 0, 1, 1);
+  --apple-ease-out: cubic-bezier(0, 0, 0.58, 1);
+  --apple-ease-in-out: cubic-bezier(0.42, 0, 0.58, 1);
+  --apple-ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+  /* ========================================
+     布局尺寸
+     ======================================== */
+  --apple-sidebar-width: 260px;
+  --apple-sidebar-collapsed: 72px;
+  --apple-navbar-height: 52px;
+  --apple-content-max-width: 1200px;
+
+  /* ========================================
+     Z-Index 层级
+     ======================================== */
+  --apple-z-dropdown: 100;
+  --apple-z-sticky: 200;
+  --apple-z-fixed: 300;
+  --apple-z-modal-backdrop: 400;
+  --apple-z-modal: 500;
+  --apple-z-popover: 600;
+  --apple-z-tooltip: 700;
+}
+
+/* ========================================
+   Dark Mode 支持
+   ======================================== */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --apple-bg-primary: #000000;
+    --apple-bg-secondary: #1c1c1e;
+    --apple-bg-tertiary: #2c2c2e;
+    --apple-bg-grouped: #1c1c1e;
+    --apple-bg-elevated: #1c1c1e;
+
+    --apple-bg-blur: rgba(29, 29, 31, 0.72);
+
+    --apple-text-primary: #f5f5f7;
+    --apple-text-secondary: #a1a1a6;
+    --apple-text-tertiary: #636366;
+    --apple-text-quaternary: #48484a;
+    --apple-text-placeholder: #636366;
+
+    --apple-separator: rgba(84, 84, 88, 0.65);
+    --apple-separator-opaque: #38383a;
+
+    --apple-fill-primary: rgba(120, 120, 128, 0.36);
+    --apple-fill-secondary: rgba(120, 120, 128, 0.32);
+    --apple-fill-tertiary: rgba(120, 120, 128, 0.24);
+    --apple-fill-quaternary: rgba(120, 120, 128, 0.18);
+  }
+}
+
+/* 手动 Dark Mode 类 */
+.dark {
+  --apple-bg-primary: #000000;
+  --apple-bg-secondary: #1c1c1e;
+  --apple-bg-tertiary: #2c2c2e;
+  --apple-bg-grouped: #1c1c1e;
+  --apple-bg-elevated: #1c1c1e;
+
+  --apple-bg-blur: rgba(29, 29, 31, 0.72);
+
+  --apple-text-primary: #f5f5f7;
+  --apple-text-secondary: #a1a1a6;
+  --apple-text-tertiary: #636366;
+  --apple-text-quaternary: #48484a;
+  --apple-text-placeholder: #636366;
+
+  --apple-separator: rgba(84, 84, 88, 0.65);
+  --apple-separator-opaque: #38383a;
+
+  --apple-fill-primary: rgba(120, 120, 128, 0.36);
+  --apple-fill-secondary: rgba(120, 120, 128, 0.32);
+  --apple-fill-tertiary: rgba(120, 120, 128, 0.24);
+  --apple-fill-quaternary: rgba(120, 120, 128, 0.18);
+}

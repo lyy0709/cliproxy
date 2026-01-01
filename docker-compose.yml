@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  # MySQL 数据库
+  mysql:
+    image: mysql:8.0
+    container_name: cli-proxy-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-cli-proxy-root-change-me}
+      MYSQL_DATABASE: ${DB_NAME:-cli-proxy}
+      MYSQL_USER: ${DB_USER:-cli-proxy}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-cli-proxy-password-change-me}
+      TZ: Asia/Shanghai
+    volumes:
+      - ./mysql-data:/var/lib/mysql
+      - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-cli-proxy-root-change-me}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cli-proxy-network
+
+  # cli-proxy 应用
+  app:
+    build: .
+    container_name: cli-proxy-app
+    restart: unless-stopped
+    ports:
+      - "8081:8080"
+    environment:
+      # 数据库配置 (从环境变量读取)
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: ${DB_USER:-cli-proxy}
+      DB_PASSWORD: ${DB_PASSWORD:-cli-proxy-password-change-me}
+      DB_NAME: ${DB_NAME:-cli-proxy}
+
+      # 服务配置
+      PORT: 8080
+      GIN_MODE: release
+
+      # JWT 密钥 (安全关键 - 必须通过 .env 设置)
+      JWT_SECRET: ${JWT_SECRET:-cli-proxy-jwt-secret-change-in-production}
+
+      TZ: Asia/Shanghai
+    depends_on:
+      mysql:
+        condition: service_healthy
+    volumes:
+      - ./logs:/app/logs
+      - ./configs:/app/configs
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    networks:
+      - cli-proxy-network
+
+volumes:
+  mysql-data:
+    driver: local
+
+networks:
+  cli-proxy-network:
+    driver: bridge

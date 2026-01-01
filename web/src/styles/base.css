@@ -1,0 +1,375 @@
+/**
+ * Apple HIG Design System - Base Styles
+ * 全局基础样式和重置
+ */
+
+@import './variables.css';
+
+/* ========================================
+   CSS Reset
+   ======================================== */
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+html, body, #app {
+  height: 100%;
+  width: 100%;
+}
+
+body {
+  font-family: var(--apple-font-family);
+  font-size: var(--apple-text-base);
+  line-height: var(--apple-leading-normal);
+  color: var(--apple-text-primary);
+  background-color: var(--apple-bg-secondary);
+  letter-spacing: var(--apple-tracking-normal);
+}
+
+/* ========================================
+   Typography
+   ======================================== */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: var(--apple-font-semibold);
+  letter-spacing: var(--apple-tracking-tight);
+  line-height: var(--apple-leading-tight);
+  color: var(--apple-text-primary);
+}
+
+h1 {
+  font-size: var(--apple-text-4xl);
+  font-weight: var(--apple-font-bold);
+}
+
+h2 {
+  font-size: var(--apple-text-3xl);
+}
+
+h3 {
+  font-size: var(--apple-text-2xl);
+}
+
+h4 {
+  font-size: var(--apple-text-xl);
+}
+
+h5 {
+  font-size: var(--apple-text-lg);
+}
+
+h6 {
+  font-size: var(--apple-text-md);
+}
+
+p {
+  color: var(--apple-text-secondary);
+  line-height: var(--apple-leading-relaxed);
+}
+
+a {
+  color: var(--apple-blue);
+  text-decoration: none;
+  transition: color var(--apple-duration-fast) var(--apple-ease-default);
+}
+
+a:hover {
+  color: var(--apple-blue-hover);
+}
+
+/* ========================================
+   Selection
+   ======================================== */
+::selection {
+  background-color: var(--apple-blue-light);
+  color: var(--apple-blue);
+}
+
+/* ========================================
+   Scrollbar - macOS Style
+   ======================================== */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--apple-fill-tertiary);
+  border-radius: var(--apple-radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--apple-fill-secondary);
+}
+
+/* ========================================
+   Focus States
+   ======================================== */
+:focus {
+  outline: none;
+}
+
+:focus-visible {
+  outline: 3px solid var(--apple-blue);
+  outline-offset: 2px;
+  border-radius: var(--apple-radius-sm);
+}
+
+/* ========================================
+   Form Elements Reset
+   ======================================== */
+button {
+  font-family: inherit;
+  font-size: inherit;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+input, textarea, select {
+  font-family: inherit;
+  font-size: inherit;
+  border: none;
+  outline: none;
+  background: none;
+}
+
+/* ========================================
+   Utility Classes
+   ======================================== */
+
+/* Text Colors */
+.text-primary { color: var(--apple-text-primary); }
+.text-secondary { color: var(--apple-text-secondary); }
+.text-tertiary { color: var(--apple-text-tertiary); }
+.text-blue { color: var(--apple-blue); }
+.text-green { color: var(--apple-green); }
+.text-orange { color: var(--apple-orange); }
+.text-red { color: var(--apple-red); }
+
+/* Background Colors */
+.bg-primary { background-color: var(--apple-bg-primary); }
+.bg-secondary { background-color: var(--apple-bg-secondary); }
+.bg-tertiary { background-color: var(--apple-bg-tertiary); }
+.bg-grouped { background-color: var(--apple-bg-grouped); }
+
+/* Flex Utilities */
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.flex-row { flex-direction: row; }
+.flex-wrap { flex-wrap: wrap; }
+.flex-1 { flex: 1; }
+.items-center { align-items: center; }
+.items-start { align-items: flex-start; }
+.items-end { align-items: flex-end; }
+.justify-center { justify-content: center; }
+.justify-between { justify-content: space-between; }
+.justify-end { justify-content: flex-end; }
+.gap-xs { gap: var(--apple-spacing-xs); }
+.gap-sm { gap: var(--apple-spacing-sm); }
+.gap-md { gap: var(--apple-spacing-md); }
+.gap-lg { gap: var(--apple-spacing-lg); }
+.gap-xl { gap: var(--apple-spacing-xl); }
+
+/* Grid Utilities */
+.grid { display: grid; }
+.grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+.grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
+.grid-cols-4 { grid-template-columns: repeat(4, 1fr); }
+
+/* Spacing Utilities */
+.p-xs { padding: var(--apple-spacing-xs); }
+.p-sm { padding: var(--apple-spacing-sm); }
+.p-md { padding: var(--apple-spacing-md); }
+.p-lg { padding: var(--apple-spacing-lg); }
+.p-xl { padding: var(--apple-spacing-xl); }
+
+.px-xs { padding-left: var(--apple-spacing-xs); padding-right: var(--apple-spacing-xs); }
+.px-sm { padding-left: var(--apple-spacing-sm); padding-right: var(--apple-spacing-sm); }
+.px-md { padding-left: var(--apple-spacing-md); padding-right: var(--apple-spacing-md); }
+.px-lg { padding-left: var(--apple-spacing-lg); padding-right: var(--apple-spacing-lg); }
+.px-xl { padding-left: var(--apple-spacing-xl); padding-right: var(--apple-spacing-xl); }
+
+.py-xs { padding-top: var(--apple-spacing-xs); padding-bottom: var(--apple-spacing-xs); }
+.py-sm { padding-top: var(--apple-spacing-sm); padding-bottom: var(--apple-spacing-sm); }
+.py-md { padding-top: var(--apple-spacing-md); padding-bottom: var(--apple-spacing-md); }
+.py-lg { padding-top: var(--apple-spacing-lg); padding-bottom: var(--apple-spacing-lg); }
+.py-xl { padding-top: var(--apple-spacing-xl); padding-bottom: var(--apple-spacing-xl); }
+
+.m-xs { margin: var(--apple-spacing-xs); }
+.m-sm { margin: var(--apple-spacing-sm); }
+.m-md { margin: var(--apple-spacing-md); }
+.m-lg { margin: var(--apple-spacing-lg); }
+.m-xl { margin: var(--apple-spacing-xl); }
+
+.mt-xs { margin-top: var(--apple-spacing-xs); }
+.mt-sm { margin-top: var(--apple-spacing-sm); }
+.mt-md { margin-top: var(--apple-spacing-md); }
+.mt-lg { margin-top: var(--apple-spacing-lg); }
+.mt-xl { margin-top: var(--apple-spacing-xl); }
+
+.mb-xs { margin-bottom: var(--apple-spacing-xs); }
+.mb-sm { margin-bottom: var(--apple-spacing-sm); }
+.mb-md { margin-bottom: var(--apple-spacing-md); }
+.mb-lg { margin-bottom: var(--apple-spacing-lg); }
+.mb-xl { margin-bottom: var(--apple-spacing-xl); }
+
+/* Border Radius */
+.rounded-sm { border-radius: var(--apple-radius-sm); }
+.rounded-md { border-radius: var(--apple-radius-md); }
+.rounded-lg { border-radius: var(--apple-radius-lg); }
+.rounded-xl { border-radius: var(--apple-radius-xl); }
+.rounded-full { border-radius: var(--apple-radius-full); }
+
+/* Shadow */
+.shadow-sm { box-shadow: var(--apple-shadow-sm); }
+.shadow-md { box-shadow: var(--apple-shadow-md); }
+.shadow-lg { box-shadow: var(--apple-shadow-lg); }
+.shadow-card { box-shadow: var(--apple-shadow-card); }
+
+/* Text */
+.text-xs { font-size: var(--apple-text-xs); }
+.text-sm { font-size: var(--apple-text-sm); }
+.text-base { font-size: var(--apple-text-base); }
+.text-md { font-size: var(--apple-text-md); }
+.text-lg { font-size: var(--apple-text-lg); }
+.text-xl { font-size: var(--apple-text-xl); }
+.text-2xl { font-size: var(--apple-text-2xl); }
+.text-3xl { font-size: var(--apple-text-3xl); }
+.text-4xl { font-size: var(--apple-text-4xl); }
+
+.font-regular { font-weight: var(--apple-font-regular); }
+.font-medium { font-weight: var(--apple-font-medium); }
+.font-semibold { font-weight: var(--apple-font-semibold); }
+.font-bold { font-weight: var(--apple-font-bold); }
+
+.text-center { text-align: center; }
+.text-left { text-align: left; }
+.text-right { text-align: right; }
+
+/* Transitions */
+.transition-fast { transition: all var(--apple-duration-fast) var(--apple-ease-default); }
+.transition-normal { transition: all var(--apple-duration-normal) var(--apple-ease-default); }
+.transition-slow { transition: all var(--apple-duration-slow) var(--apple-ease-default); }
+
+/* Visibility */
+.hidden { display: none; }
+.invisible { visibility: hidden; }
+.visible { visibility: visible; }
+
+/* Overflow */
+.overflow-hidden { overflow: hidden; }
+.overflow-auto { overflow: auto; }
+.overflow-scroll { overflow: scroll; }
+
+/* Position */
+.relative { position: relative; }
+.absolute { position: absolute; }
+.fixed { position: fixed; }
+.sticky { position: sticky; }
+
+/* Width/Height */
+.w-full { width: 100%; }
+.h-full { height: 100%; }
+.min-h-screen { min-height: 100vh; }
+
+/* Cursor */
+.cursor-pointer { cursor: pointer; }
+.cursor-not-allowed { cursor: not-allowed; }
+
+/* ========================================
+   Animation Keyframes
+   ======================================== */
+@keyframes apple-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes apple-fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes apple-fade-in-down {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes apple-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes apple-slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes apple-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes apple-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Animation Classes */
+.animate-fade-in { animation: apple-fade-in var(--apple-duration-normal) var(--apple-ease-default); }
+.animate-fade-in-up { animation: apple-fade-in-up var(--apple-duration-normal) var(--apple-ease-default); }
+.animate-fade-in-down { animation: apple-fade-in-down var(--apple-duration-normal) var(--apple-ease-default); }
+.animate-scale-in { animation: apple-scale-in var(--apple-duration-normal) var(--apple-ease-spring); }
+.animate-slide-in-right { animation: apple-slide-in-right var(--apple-duration-normal) var(--apple-ease-default); }
+.animate-pulse { animation: apple-pulse 2s var(--apple-ease-in-out) infinite; }
+.animate-spin { animation: apple-spin 1s linear infinite; }
