@@ -1616,7 +1616,7 @@ onMounted(() => {
   margin: 0;
 }
 
-/* 响应式 */
+/* 响应式 - 移动端适配 */
 @media (max-width: 1024px) {
   .page-header {
     flex-direction: column;
@@ -1635,6 +1635,208 @@ onMounted(() => {
 
   .filter-left {
     flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 767px) {
+  .accounts-page {
+    padding: 0 var(--apple-spacing-md);
+  }
+
+  .page-title {
+    font-size: var(--apple-text-2xl);
+  }
+
+  .page-subtitle {
+    font-size: var(--apple-text-sm);
+  }
+
+  .header-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .header-actions .btn {
+    flex: 1;
+    justify-content: center;
+    min-height: var(--apple-touch-target);
+  }
+
+  /* 平台统计卡片 */
+  .stat-card {
+    padding: var(--apple-spacing-md);
+  }
+
+  .stat-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .stat-icon svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  /* 筛选栏 */
+  .filter-left {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .filter-select,
+  .search-box {
+    width: 100%;
+  }
+
+  .search-box input {
+    min-height: var(--apple-touch-target);
+    font-size: 16px;
+  }
+
+  /* 表格卡片式布局 */
+  .table-card {
+    margin: 0 calc(var(--apple-spacing-md) * -1);
+    border-radius: 0;
+  }
+
+  .data-table {
+    font-size: var(--apple-text-xs);
+  }
+
+  .data-table th,
+  .data-table td {
+    padding: var(--apple-spacing-sm) var(--apple-spacing-xs);
+  }
+
+  /* 隐藏部分列 */
+  .col-checkbox,
+  .col-center,
+  .col-right {
+    display: none;
+  }
+
+  /* 只保留核心列 */
+  .data-table th:nth-child(n+5):not(:last-child),
+  .data-table td:nth-child(n+5):not(:last-child) {
+    display: none;
+  }
+
+  .account-cell {
+    gap: var(--apple-spacing-xs);
+  }
+
+  .account-avatar {
+    width: 32px;
+    height: 32px;
+  }
+
+  .account-avatar svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .account-name {
+    font-size: var(--apple-text-sm);
+  }
+
+  .account-type {
+    font-size: 10px;
+  }
+
+  /* 用量进度条 */
+  .usage-bars {
+    min-width: 80px;
+  }
+
+  .usage-bar-label {
+    font-size: 9px;
+  }
+
+  /* 操作按钮 */
+  .action-group {
+    gap: var(--apple-spacing-xxs);
+  }
+
+  .action-btn {
+    width: 28px;
+    height: 28px;
+  }
+
+  .action-btn svg {
+    width: 12px;
+    height: 12px;
+  }
+
+  /* 表格底部 */
+  .table-footer {
+    flex-direction: column;
+    gap: var(--apple-spacing-sm);
+    padding: var(--apple-spacing-md);
+  }
+
+  .pagination-wrap {
+    width: 100%;
+    flex-direction: column;
+    gap: var(--apple-spacing-sm);
+  }
+
+  .pagination-controls {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  /* 模态框 */
+  .modal-overlay {
+    padding: var(--apple-spacing-md);
+    align-items: flex-end;
+  }
+
+  .modal {
+    max-height: 85vh;
+    border-radius: var(--apple-radius-xl) var(--apple-radius-xl) 0 0;
+  }
+
+  .modal.modal-sm {
+    max-width: 100%;
+  }
+
+  .modal-header {
+    padding: var(--apple-spacing-lg) var(--apple-spacing-md);
+  }
+
+  .modal-body {
+    padding: var(--apple-spacing-md);
+  }
+
+  .modal-footer {
+    padding: var(--apple-spacing-md);
+    flex-direction: column;
+    gap: var(--apple-spacing-sm);
+  }
+
+  .modal-footer .btn {
+    width: 100%;
+    min-height: var(--apple-touch-target);
+  }
+}
+
+@media (max-width: 375px) {
+  .page-title {
+    font-size: var(--apple-text-xl);
+  }
+
+  .stat-info h3 {
+    font-size: var(--apple-text-sm);
+  }
+
+  .data-table {
+    font-size: 10px;
+  }
+
+  .platform-badge,
+  .status-badge {
+    padding: 2px 4px;
+    font-size: 9px;
   }
 }
 </style>

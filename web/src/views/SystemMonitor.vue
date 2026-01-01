@@ -845,7 +845,7 @@ onMounted(() => {
   height: 14px;
 }
 
-/* 响应式布局 */
+/* 响应式布局 - 移动端适配 */
 @media (max-width: 1200px) {
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -860,27 +860,132 @@ onMounted(() => {
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767px) {
+  .system-monitor-page {
+    padding: 0 var(--apple-spacing-md);
+  }
+
   .page-header {
     flex-direction: column;
     gap: var(--apple-spacing-md);
+    align-items: stretch;
   }
 
+  .page-title {
+    font-size: var(--apple-text-2xl);
+  }
+
+  .page-subtitle {
+    font-size: var(--apple-text-sm);
+  }
+
+  .btn {
+    width: 100%;
+    min-height: var(--apple-touch-target);
+    justify-content: center;
+  }
+
+  /* 统计卡片 */
   .stats-grid,
   .account-stats-grid {
     grid-template-columns: 1fr;
+    gap: var(--apple-spacing-sm);
   }
 
+  .stat-card {
+    padding: var(--apple-spacing-md);
+  }
+
+  .stat-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .stat-icon svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .stat-value {
+    font-size: var(--apple-text-lg);
+  }
+
+  /* 账号状态卡片 */
+  .account-stat-card {
+    padding: var(--apple-spacing-lg);
+  }
+
+  .account-stat-card .account-value {
+    font-size: var(--apple-text-2xl);
+  }
+
+  /* 详情卡片网格 */
   .cards-grid.two-col {
     grid-template-columns: 1fr;
   }
 
-  .resource-grid {
-    grid-template-columns: 1fr;
+  .detail-card {
+    margin: 0 calc(var(--apple-spacing-md) * -1);
+    border-radius: 0;
+  }
+
+  .card-header {
+    padding: var(--apple-spacing-md);
+  }
+
+  .card-body {
+    padding: var(--apple-spacing-md);
   }
 
   .detail-grid {
     grid-template-columns: 1fr;
+    gap: var(--apple-spacing-sm);
+  }
+
+  .detail-item {
+    padding: var(--apple-spacing-sm);
+  }
+
+  /* 资源监控 */
+  .resource-grid {
+    grid-template-columns: 1fr;
+    gap: var(--apple-spacing-sm);
+  }
+
+  .resource-card {
+    padding: var(--apple-spacing-md);
+    margin: 0 calc(var(--apple-spacing-md) * -1);
+    border-radius: 0;
+  }
+
+  .section-title {
+    font-size: var(--apple-text-md);
+    margin-bottom: var(--apple-spacing-sm);
+  }
+
+  /* 更新时间 */
+  .update-time {
+    justify-content: center;
+    padding: var(--apple-spacing-md) 0;
+  }
+}
+
+@media (max-width: 375px) {
+  .page-title {
+    font-size: var(--apple-text-xl);
+  }
+
+  .stat-value {
+    font-size: var(--apple-text-md);
+  }
+
+  .account-stat-card .account-value {
+    font-size: var(--apple-text-xl);
+  }
+
+  .detail-label,
+  .detail-value {
+    font-size: var(--apple-text-xs);
   }
 }
 </style>

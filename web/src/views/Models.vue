@@ -1336,20 +1336,176 @@ watch(activeTab, (newTab) => {
   margin: 0;
 }
 
-/* 响应式 */
-@media (max-width: 768px) {
+/* 响应式 - 移动端适配 */
+@media (max-width: 1024px) {
   .form-row, .form-row.three {
     grid-template-columns: 1fr;
   }
+}
 
+@media (max-width: 767px) {
+  .models-page {
+    padding: 0 var(--apple-spacing-md);
+  }
+
+  .page-title {
+    font-size: var(--apple-text-2xl);
+  }
+
+  .page-subtitle {
+    font-size: var(--apple-text-sm);
+  }
+
+  /* Tabs 移动端适配 */
+  .tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tab {
+    flex: none;
+    white-space: nowrap;
+    padding: var(--apple-spacing-sm);
+  }
+
+  /* 信息横幅 */
+  .info-banner {
+    padding: var(--apple-spacing-sm);
+  }
+
+  .info-banner svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  /* 工具栏 */
   .card-toolbar {
     flex-direction: column;
     gap: var(--apple-spacing-sm);
     align-items: stretch;
+    padding: var(--apple-spacing-md);
+  }
+
+  .toolbar-left {
+    width: 100%;
   }
 
   .toolbar-actions {
     justify-content: flex-end;
+  }
+
+  .filter-select {
+    width: 100%;
+    min-height: var(--apple-touch-target);
+    font-size: 16px;
+  }
+
+  /* 表格卡片 */
+  .table-card {
+    margin: 0 calc(var(--apple-spacing-md) * -1);
+    border-radius: 0;
+  }
+
+  .data-table {
+    font-size: var(--apple-text-xs);
+  }
+
+  .data-table th,
+  .data-table td {
+    padding: var(--apple-spacing-sm) var(--apple-spacing-xs);
+  }
+
+  /* 隐藏部分列 */
+  .col-center,
+  .col-right:first-of-type {
+    display: none;
+  }
+
+  .model-name-cell {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--apple-spacing-xxs);
+  }
+
+  .price-info {
+    flex-direction: row;
+    gap: var(--apple-spacing-xs);
+  }
+
+  /* 操作按钮 */
+  .action-group {
+    gap: var(--apple-spacing-xxs);
+  }
+
+  .action-btn {
+    width: 28px;
+    height: 28px;
+  }
+
+  /* 缓存统计 */
+  .cache-stats {
+    padding: var(--apple-spacing-md);
+  }
+
+  .mapping-tag {
+    font-size: 10px;
+  }
+
+  /* 模态框 */
+  .modal-overlay {
+    padding: var(--apple-spacing-md);
+    align-items: flex-end;
+  }
+
+  .modal {
+    max-height: 85vh;
+    border-radius: var(--apple-radius-xl) var(--apple-radius-xl) 0 0;
+  }
+
+  .modal.modal-sm,
+  .modal.modal-lg {
+    max-width: 100%;
+  }
+
+  .modal-header {
+    padding: var(--apple-spacing-lg) var(--apple-spacing-md);
+  }
+
+  .modal-body {
+    padding: var(--apple-spacing-md);
+  }
+
+  .modal-footer {
+    padding: var(--apple-spacing-md);
+    flex-direction: column;
+    gap: var(--apple-spacing-sm);
+  }
+
+  .modal-footer .btn {
+    width: 100%;
+    min-height: var(--apple-touch-target);
+  }
+
+  .form-input,
+  .form-select,
+  .form-textarea {
+    min-height: var(--apple-touch-target);
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 375px) {
+  .page-title {
+    font-size: var(--apple-text-xl);
+  }
+
+  .data-table {
+    font-size: 10px;
+  }
+
+  .badge {
+    padding: 2px 6px;
+    font-size: 10px;
   }
 }
 </style>

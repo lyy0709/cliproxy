@@ -538,14 +538,96 @@ onMounted(() => {
   height: 16px;
 }
 
-/* 响应式 */
-@media (max-width: 480px) {
+/* 响应式 - 移动端适配 */
+@media (max-width: 767px) {
+  .login-page {
+    padding: var(--apple-spacing-md);
+    padding-top: calc(var(--apple-safe-area-top) + var(--apple-spacing-md));
+    padding-bottom: calc(var(--apple-safe-area-bottom) + var(--apple-spacing-md));
+  }
+
   .login-card {
-    padding: var(--apple-spacing-xl);
+    padding: var(--apple-spacing-lg);
+    border-radius: var(--apple-radius-xl);
+  }
+
+  .login-header {
+    margin-bottom: var(--apple-spacing-xl);
+  }
+
+  .logo {
+    width: 56px;
+    height: 56px;
+    margin-bottom: var(--apple-spacing-md);
+  }
+
+  .logo-icon {
+    width: 30px;
+    height: 30px;
+  }
+
+  .login-title {
+    font-size: var(--apple-text-xl);
+  }
+
+  .login-subtitle {
+    font-size: var(--apple-text-xs);
+  }
+
+  .login-form {
+    gap: var(--apple-spacing-md);
+  }
+
+  .form-input {
+    padding: var(--apple-spacing-md);
+    padding-left: 44px;
+    min-height: var(--apple-touch-target);
+    font-size: 16px; /* 防止 iOS 自动缩放 */
+  }
+
+  .password-toggle {
+    width: 44px;
+    height: 44px;
+    right: 0;
+  }
+
+  .captcha-row {
+    flex-direction: column;
+    gap: var(--apple-spacing-sm);
+  }
+
+  .captcha-input {
+    width: 100%;
   }
 
   .captcha-image-wrapper {
-    width: 100px;
+    width: 100%;
+    height: 48px;
+  }
+
+  .login-btn {
+    min-height: var(--apple-touch-target);
+    font-size: var(--apple-text-md);
+  }
+
+  /* 隐藏部分装饰圆 */
+  .bg-circle-3 {
+    display: none;
+  }
+}
+
+@media (max-width: 375px) {
+  .login-card {
+    padding: var(--apple-spacing-md);
+  }
+
+  .logo {
+    width: 48px;
+    height: 48px;
+  }
+
+  .login-title {
+    font-size: var(--apple-text-lg);
   }
 }
 </style>

@@ -852,36 +852,82 @@ function formatDate(dateStr) {
   animation: apple-spin 1s linear infinite;
 }
 
-/* 响应式 */
-@media (max-width: 640px) {
+/* 响应式 - 移动端适配 */
+@media (max-width: 767px) {
   .usage-query-page {
     padding: var(--apple-spacing-md);
+    padding-top: calc(var(--apple-safe-area-top) + var(--apple-spacing-md));
+    padding-bottom: calc(var(--apple-safe-area-bottom) + var(--apple-spacing-md));
   }
 
   .query-card {
-    padding: var(--apple-spacing-xl);
+    padding: var(--apple-spacing-lg);
+    border-radius: var(--apple-radius-xl);
+  }
+
+  .header-icon {
+    width: 56px;
+    height: 56px;
+  }
+
+  .header-icon svg {
+    width: 28px;
+    height: 28px;
+  }
+
+  .header-title {
+    font-size: var(--apple-text-xl);
+  }
+
+  .header-subtitle {
+    font-size: var(--apple-text-xs);
   }
 
   .input-group {
     flex-direction: column;
+    gap: var(--apple-spacing-sm);
+  }
+
+  .form-input {
+    min-height: var(--apple-touch-target);
+    font-size: 16px; /* 防止 iOS 缩放 */
   }
 
   .btn-query {
     width: 100%;
+    min-height: var(--apple-touch-target);
   }
 
+  /* 结果容器 */
+  .result-container {
+    max-width: 100%;
+  }
+
+  /* Key 信息卡片 */
+  .key-info-card {
+    padding: var(--apple-spacing-md);
+  }
+
+  .key-name h2 {
+    font-size: var(--apple-text-lg);
+  }
+
+  /* 统计网格 */
   .stats-grid {
     grid-template-columns: 1fr;
+    gap: var(--apple-spacing-xs);
   }
 
   .stat-card {
     flex-direction: row;
+    padding: var(--apple-spacing-md);
   }
 
   .stat-card.mini {
     flex-direction: row;
     text-align: left;
     justify-content: space-between;
+    padding: var(--apple-spacing-sm) var(--apple-spacing-md);
   }
 
   .stat-card.mini .stat-label {
@@ -890,8 +936,110 @@ function formatDate(dateStr) {
     font-size: var(--apple-text-sm);
   }
 
+  .stat-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .stat-icon svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .stat-value {
+    font-size: var(--apple-text-lg);
+  }
+
+  .stat-value-sm {
+    font-size: var(--apple-text-md);
+  }
+
+  /* 配额卡片 */
+  .quota-item {
+    padding: var(--apple-spacing-sm) var(--apple-spacing-md);
+  }
+
+  .quota-label,
+  .quota-value {
+    font-size: var(--apple-text-sm);
+  }
+
+  /* 表格卡片 */
+  .table-card {
+    border-radius: var(--apple-radius-md);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .data-table {
+    font-size: var(--apple-text-xs);
+    min-width: 400px;
+  }
+
+  .data-table th,
+  .data-table td {
+    padding: var(--apple-spacing-xs) var(--apple-spacing-sm);
+  }
+
+  .model-name {
+    max-width: 120px;
+    font-size: var(--apple-text-xs);
+  }
+
+  /* 刷新按钮 */
+  .btn-refresh {
+    padding: var(--apple-spacing-xs) var(--apple-spacing-sm);
+  }
+
+  /* 空表格 */
+  .empty-table {
+    padding: var(--apple-spacing-xl);
+  }
+
+  /* 底部链接 */
+  .footer-link {
+    padding: var(--apple-spacing-lg) 0;
+  }
+
+  .back-link {
+    min-height: var(--apple-touch-target);
+    padding: var(--apple-spacing-sm);
+  }
+
+  /* 背景装饰缩小 */
+  .bg-circle-1 {
+    width: 300px;
+    height: 300px;
+    top: -100px;
+    right: -80px;
+  }
+
+  .bg-circle-2 {
+    width: 200px;
+    height: 200px;
+  }
+}
+
+@media (max-width: 375px) {
+  .query-card {
+    padding: var(--apple-spacing-md);
+  }
+
+  .header-icon {
+    width: 48px;
+    height: 48px;
+  }
+
   .header-title {
-    font-size: var(--apple-text-xl);
+    font-size: var(--apple-text-lg);
+  }
+
+  .key-name h2 {
+    font-size: var(--apple-text-md);
+  }
+
+  .stat-value {
+    font-size: var(--apple-text-md);
   }
 }
 

@@ -586,37 +586,158 @@ const copyText = async (text) => {
   box-shadow: var(--apple-shadow-md);
 }
 
-/* 响应式 */
-@media (max-width: 768px) {
+/* 响应式 - 移动端适配 */
+@media (max-width: 767px) {
+  .navbar-content {
+    padding: 0 var(--apple-spacing-md);
+    height: 48px;
+  }
+
+  .logo-icon {
+    width: 24px;
+    height: 24px;
+  }
+
+  .logo-text {
+    font-size: var(--apple-text-md);
+  }
+
   .nav-actions {
     gap: var(--apple-spacing-xs);
   }
 
-  .query-btn {
-    padding: var(--apple-spacing-xs) var(--apple-spacing-sm);
+  .query-btn span,
+  .login-btn span {
+    display: none; /* 移动端隐藏文字，只显示图标 */
+  }
+
+  .query-btn,
+  .login-btn {
+    width: 40px;
+    height: 40px;
+    padding: var(--apple-spacing-xs);
+    justify-content: center;
+  }
+
+  .query-btn svg,
+  .login-btn svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .main-content {
+    padding: var(--apple-spacing-lg) var(--apple-spacing-md);
+  }
+
+  .hero {
+    padding: var(--apple-spacing-xl) 0;
   }
 
   .hero-title {
-    font-size: var(--apple-text-3xl);
+    font-size: var(--apple-text-2xl);
+    line-height: 1.2;
   }
 
   .hero-subtitle {
-    font-size: var(--apple-text-md);
+    font-size: var(--apple-text-base);
+    margin-bottom: var(--apple-spacing-lg);
   }
 
   .hero-actions {
     flex-direction: column;
-    align-items: center;
+    align-items: stretch;
+    gap: var(--apple-spacing-sm);
   }
 
   .hero-btn {
     width: 100%;
-    max-width: 280px;
     justify-content: center;
+    padding: var(--apple-spacing-md);
+    min-height: var(--apple-touch-target);
+  }
+
+  .endpoints-section,
+  .config-section {
+    margin-bottom: var(--apple-spacing-xl);
+  }
+
+  .section-title {
+    font-size: var(--apple-text-lg);
+    margin-bottom: var(--apple-spacing-md);
   }
 
   .endpoints-grid {
     grid-template-columns: 1fr;
+    gap: var(--apple-spacing-md);
+  }
+
+  .endpoint-card {
+    padding: var(--apple-spacing-md);
+  }
+
+  .endpoint-header {
+    margin-bottom: var(--apple-spacing-md);
+  }
+
+  .platform-badge {
+    width: 40px;
+    height: 40px;
+  }
+
+  .platform-badge svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .endpoint-url {
+    padding: var(--apple-spacing-sm);
+  }
+
+  .endpoint-url code {
+    font-size: var(--apple-text-xs);
+  }
+
+  .config-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .config-tab {
+    flex: none;
+    white-space: nowrap;
+  }
+
+  .config-content {
+    padding: var(--apple-spacing-md);
+  }
+
+  .config-content pre {
+    padding: var(--apple-spacing-md);
+    font-size: var(--apple-text-xs);
+  }
+
+  .copy-config-btn {
+    top: var(--apple-spacing-md);
+    right: var(--apple-spacing-md);
+    padding: var(--apple-spacing-xs);
+  }
+
+  .copy-config-btn span {
+    display: none;
+  }
+}
+
+@media (max-width: 375px) {
+  .hero-title {
+    font-size: var(--apple-text-xl);
+  }
+
+  .hero-subtitle {
+    font-size: var(--apple-text-sm);
+  }
+
+  .platform-name {
+    font-size: var(--apple-text-base);
   }
 }
 </style>

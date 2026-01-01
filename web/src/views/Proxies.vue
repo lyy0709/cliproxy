@@ -1365,19 +1365,207 @@ onMounted(() => {
   margin: 0;
 }
 
-/* 响应式 */
-@media (max-width: 768px) {
+/* 响应式 - 移动端适配 */
+@media (max-width: 1024px) {
   .page-header {
     flex-direction: column;
     gap: var(--apple-spacing-lg);
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 767px) {
+  .proxies-page {
+    padding: 0 var(--apple-spacing-md);
+  }
+
+  .page-title {
+    font-size: var(--apple-text-2xl);
+  }
+
+  .page-subtitle {
+    font-size: var(--apple-text-sm);
+  }
+
+  .header-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .header-actions .btn {
+    flex: 1;
+    justify-content: center;
+    min-height: var(--apple-touch-target);
+  }
+
+  /* 筛选栏 */
+  .filter-bar {
+    margin-bottom: var(--apple-spacing-md);
   }
 
   .search-box {
     width: 100%;
   }
 
-  .form-row {
-    grid-template-columns: 1fr;
+  .search-box input {
+    min-height: var(--apple-touch-target);
+    font-size: 16px;
+  }
+
+  /* 表格卡片 */
+  .table-card {
+    margin: 0 calc(var(--apple-spacing-md) * -1);
+    border-radius: 0;
+  }
+
+  .data-table {
+    font-size: var(--apple-text-xs);
+  }
+
+  .data-table th,
+  .data-table td {
+    padding: var(--apple-spacing-sm) var(--apple-spacing-xs);
+  }
+
+  /* 隐藏部分列 */
+  .col-center:first-of-type {
+    display: none;
+  }
+
+  /* 代理单元格 */
+  .proxy-cell {
+    gap: var(--apple-spacing-xs);
+  }
+
+  .proxy-icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .proxy-icon svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .proxy-name {
+    font-size: var(--apple-text-sm);
+  }
+
+  .proxy-remark {
+    display: none;
+  }
+
+  .proxy-address {
+    font-size: 10px;
+  }
+
+  .type-badge {
+    padding: 2px 6px;
+    font-size: 10px;
+  }
+
+  .test-badge {
+    padding: 2px 6px;
+    font-size: 10px;
+  }
+
+  /* 操作按钮 */
+  .action-group {
+    gap: var(--apple-spacing-xxs);
+    flex-wrap: wrap;
+  }
+
+  .action-btn {
+    width: 28px;
+    height: 28px;
+  }
+
+  .action-btn svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  /* 分页 */
+  .table-footer {
+    padding: var(--apple-spacing-md);
+  }
+
+  .pagination-wrap {
+    flex-direction: column;
+    gap: var(--apple-spacing-sm);
+  }
+
+  .pagination-controls {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  /* 模态框 */
+  .modal-overlay {
+    padding: var(--apple-spacing-md);
+    align-items: flex-end;
+  }
+
+  .modal {
+    max-height: 85vh;
+    border-radius: var(--apple-radius-xl) var(--apple-radius-xl) 0 0;
+  }
+
+  .modal.modal-sm {
+    max-width: 100%;
+  }
+
+  .modal-header {
+    padding: var(--apple-spacing-lg) var(--apple-spacing-md);
+  }
+
+  .modal-body {
+    padding: var(--apple-spacing-md);
+  }
+
+  .modal-footer {
+    padding: var(--apple-spacing-md);
+    flex-direction: column;
+    gap: var(--apple-spacing-sm);
+  }
+
+  .modal-footer .btn {
+    width: 100%;
+    min-height: var(--apple-touch-target);
+  }
+
+  /* 类型选择器 */
+  .type-selector {
+    flex-wrap: wrap;
+  }
+
+  .type-option {
+    flex: 1;
+    min-width: calc(33% - var(--apple-spacing-xs));
+    padding: var(--apple-spacing-sm);
+  }
+
+  .form-input,
+  .form-textarea {
+    min-height: var(--apple-touch-target);
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 375px) {
+  .page-title {
+    font-size: var(--apple-text-xl);
+  }
+
+  .data-table {
+    font-size: 10px;
+  }
+
+  .proxy-name {
+    font-size: var(--apple-text-xs);
   }
 }
 </style>

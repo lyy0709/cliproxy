@@ -161,6 +161,31 @@
   --apple-z-modal: 500;
   --apple-z-popover: 600;
   --apple-z-tooltip: 700;
+
+  /* ========================================
+     移动端断点 (Apple HIG)
+     ======================================== */
+  /* iPhone SE/Mini: 320-375px */
+  /* iPhone Standard: 375-428px */
+  /* iPhone Plus/Max: 428-480px */
+  /* iPad Mini: 744px */
+  /* iPad: 834px */
+  /* iPad Pro: 1024px+ */
+  --apple-breakpoint-xs: 375px;   /* 小屏手机 */
+  --apple-breakpoint-sm: 428px;   /* 大屏手机 */
+  --apple-breakpoint-md: 768px;   /* 平板竖屏 */
+  --apple-breakpoint-lg: 1024px;  /* 平板横屏 */
+  --apple-breakpoint-xl: 1200px;  /* 桌面端 */
+
+  /* 移动端触控目标 (HIG: 最小 44pt) */
+  --apple-touch-target: 44px;
+  --apple-touch-target-sm: 36px;
+
+  /* 移动端安全区域 */
+  --apple-safe-area-top: env(safe-area-inset-top, 0px);
+  --apple-safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --apple-safe-area-left: env(safe-area-inset-left, 0px);
+  --apple-safe-area-right: env(safe-area-inset-right, 0px);
 }
 
 /* ========================================

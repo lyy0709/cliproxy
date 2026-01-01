@@ -1221,19 +1221,67 @@ onMounted(() => {
   color: var(--apple-red);
 }
 
-/* 响应式 */
+/* 响应式 - 移动端适配 */
 @media (max-width: 1024px) {
   .settings-grid {
     grid-template-columns: 1fr;
   }
 }
 
-@media (max-width: 768px) {
-  .page-header {
-    flex-direction: column;
-    gap: var(--apple-spacing-lg);
+@media (max-width: 767px) {
+  .settings-page {
+    padding: 0 var(--apple-spacing-md);
   }
 
+  .page-title {
+    font-size: var(--apple-text-2xl);
+  }
+
+  .page-subtitle {
+    font-size: var(--apple-text-sm);
+  }
+
+  /* 设置卡片 */
+  .settings-card {
+    margin: 0 calc(var(--apple-spacing-md) * -1);
+    border-radius: 0;
+  }
+
+  .card-header {
+    padding: var(--apple-spacing-md);
+    flex-wrap: wrap;
+    gap: var(--apple-spacing-sm);
+  }
+
+  .card-header h3 {
+    font-size: var(--apple-text-base);
+  }
+
+  .card-title-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--apple-spacing-xs);
+  }
+
+  .header-badges {
+    flex-wrap: wrap;
+  }
+
+  .card-body {
+    padding: var(--apple-spacing-md);
+  }
+
+  .card-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .card-icon svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  /* 设置项 */
   .setting-item {
     flex-direction: column;
     align-items: flex-start;
@@ -1242,14 +1290,125 @@ onMounted(() => {
 
   .setting-info {
     margin-right: 0;
+    width: 100%;
   }
 
+  .toggle-switch {
+    width: 50px;
+    height: 28px;
+  }
+
+  .toggle-slider:before {
+    width: 24px;
+    height: 24px;
+  }
+
+  .toggle-switch input:checked + .toggle-slider:before {
+    transform: translateX(22px);
+  }
+
+  .input-with-unit {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .input-with-unit .form-input {
+    width: 100px;
+    min-height: var(--apple-touch-target);
+    font-size: 16px;
+  }
+
+  /* 配置列表卡片 */
+  .config-list-card {
+    margin: 0 calc(var(--apple-spacing-md) * -1);
+    border-radius: 0;
+  }
+
+  .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .data-table {
+    min-width: 500px;
+    font-size: var(--apple-text-xs);
+  }
+
+  .data-table th,
+  .data-table td {
+    padding: var(--apple-spacing-xs) var(--apple-spacing-sm);
+  }
+
+  .config-desc {
+    max-width: 150px;
+  }
+
+  /* 操作栏 */
+  .action-bar {
+    flex-direction: column;
+    gap: var(--apple-spacing-sm);
+    margin: 0 calc(var(--apple-spacing-md) * -1);
+    border-radius: 0;
+    padding: var(--apple-spacing-lg) var(--apple-spacing-md);
+  }
+
+  .action-bar .btn {
+    width: 100%;
+    min-height: var(--apple-touch-target);
+  }
+
+  /* 健康状态网格 */
   .health-status-grid {
     grid-template-columns: 1fr;
   }
 
   .status-item.full-width {
     grid-column: span 1;
+  }
+
+  /* 模态框 */
+  .modal-overlay {
+    padding: var(--apple-spacing-md);
+    align-items: flex-end;
+  }
+
+  .modal {
+    max-height: 85vh;
+    border-radius: var(--apple-radius-xl) var(--apple-radius-xl) 0 0;
+    max-width: 100%;
+  }
+
+  .modal-header {
+    padding: var(--apple-spacing-lg) var(--apple-spacing-md);
+  }
+
+  .modal-body {
+    padding: var(--apple-spacing-md);
+  }
+
+  .modal-footer {
+    padding: var(--apple-spacing-md);
+    flex-direction: column;
+    gap: var(--apple-spacing-sm);
+  }
+
+  .modal-footer .btn {
+    width: 100%;
+    min-height: var(--apple-touch-target);
+  }
+}
+
+@media (max-width: 375px) {
+  .page-title {
+    font-size: var(--apple-text-xl);
+  }
+
+  .setting-label {
+    font-size: var(--apple-text-xs);
+  }
+
+  .config-key {
+    font-size: 10px;
   }
 }
 </style>

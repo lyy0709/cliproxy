@@ -10,7 +10,10 @@
 <template>
   <div class="app-layout">
     <!-- 侧边栏 -->
-    <aside :class="['app-sidebar', { 'is-collapsed': isCollapse }]">
+    <aside :class="['app-sidebar', { 'is-collapsed': isCollapse, 'is-mobile-open': mobileMenuOpen }]">
+      <!-- 移动端遮罩 -->
+      <div v-if="mobileMenuOpen" class="sidebar-backdrop" @click="mobileMenuOpen = false"></div>
+
       <!-- Logo -->
       <div class="sidebar-header">
         <div class="logo">
@@ -19,6 +22,13 @@
           </svg>
           <span v-if="!isCollapse" class="logo-text">Cli-Proxy</span>
         </div>
+        <!-- 移动端关闭按钮 -->
+        <button class="mobile-close-btn" @click="mobileMenuOpen = false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
       </div>
 
       <!-- 导航菜单 -->
@@ -264,6 +274,14 @@
     <div class="app-main">
       <!-- 顶部导航栏 -->
       <header class="app-navbar">
+        <!-- 移动端汉堡菜单 -->
+        <button class="mobile-menu-btn" @click="mobileMenuOpen = true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="12" x2="21" y2="12"/>
+            <line x1="3" y1="6" x2="21" y2="6"/>
+            <line x1="3" y1="18" x2="21" y2="18"/>
+          </svg>
+        </button>
         <div class="navbar-title">
           {{ currentPageTitle }}
         </div>
@@ -372,6 +390,7 @@ const userStore = useUserStore()
 
 const isCollapse = ref(false)
 const showDropdown = ref(false)
+const mobileMenuOpen = ref(false)
 const passwordDialogVisible = ref(false)
 const changingPassword = ref(false)
 
@@ -934,5 +953,230 @@ const vClickOutside = {
 
 .is-collapsed .logo {
   justify-content: center;
+}
+
+/* 移动端菜单按钮 - 默认隐藏 */
+.mobile-menu-btn {
+  display: none;
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  color: var(--apple-text-primary);
+  border-radius: var(--apple-radius-sm);
+  transition: background var(--apple-duration-fast) var(--apple-ease-default);
+}
+
+.mobile-menu-btn:hover {
+  background: var(--apple-fill-quaternary);
+}
+
+.mobile-menu-btn svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* 移动端关闭按钮 - 默认隐藏 */
+.mobile-close-btn {
+  display: none;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  color: var(--apple-text-tertiary);
+  border-radius: var(--apple-radius-sm);
+  transition: all var(--apple-duration-fast) var(--apple-ease-default);
+}
+
+.mobile-close-btn:hover {
+  background: var(--apple-fill-quaternary);
+  color: var(--apple-text-primary);
+}
+
+.mobile-close-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* 侧边栏遮罩 - 默认隐藏 */
+.sidebar-backdrop {
+  display: none;
+}
+
+/* ========================================
+   移动端响应式 - Apple HIG
+   ======================================== */
+@media (max-width: 767px) {
+  /* 侧边栏变为抽屉式 */
+  .app-sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 280px;
+    z-index: 200;
+    transform: translateX(-100%);
+    transition: transform var(--apple-duration-normal) var(--apple-ease-default);
+  }
+
+  .app-sidebar.is-mobile-open {
+    transform: translateX(0);
+  }
+
+  .app-sidebar.is-collapsed {
+    width: 280px;
+    transform: translateX(-100%);
+  }
+
+  .app-sidebar.is-collapsed.is-mobile-open {
+    transform: translateX(0);
+  }
+
+  /* 侧边栏遮罩 */
+  .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.35);
+    z-index: -1;
+  }
+
+  /* 显示移动端按钮 */
+  .mobile-menu-btn {
+    display: flex;
+  }
+
+  .mobile-close-btn {
+    display: flex;
+  }
+
+  /* 隐藏桌面端折叠按钮 */
+  .sidebar-footer {
+    display: none;
+  }
+
+  /* 侧边栏头部调整 */
+  .sidebar-header {
+    justify-content: space-between;
+    padding: 0 var(--apple-spacing-md);
+    height: 56px;
+  }
+
+  /* 导航项目触控优化 */
+  .nav-item {
+    min-height: var(--apple-touch-target);
+    padding: var(--apple-spacing-sm) var(--apple-spacing-md);
+  }
+
+  /* 折叠状态下仍显示标签 */
+  .is-collapsed .nav-group-title,
+  .is-collapsed .nav-label {
+    display: block;
+  }
+
+  .is-collapsed .nav-item {
+    justify-content: flex-start;
+    padding: var(--apple-spacing-sm) var(--apple-spacing-md);
+  }
+
+  .is-collapsed .logo {
+    justify-content: flex-start;
+  }
+
+  /* 顶部导航栏 */
+  .app-navbar {
+    padding: 0 var(--apple-spacing-md);
+    height: 56px;
+  }
+
+  .navbar-title {
+    font-size: var(--apple-text-base);
+    flex: 1;
+    text-align: center;
+  }
+
+  /* 用户下拉 */
+  .user-name {
+    display: none;
+  }
+
+  .dropdown-arrow {
+    display: none;
+  }
+
+  .user-dropdown {
+    padding: var(--apple-spacing-xxs);
+  }
+
+  .dropdown-menu {
+    right: -8px;
+  }
+
+  /* 内容区 */
+  .app-content {
+    padding: var(--apple-spacing-md);
+  }
+
+  /* 模态框 */
+  .modal-overlay {
+    padding: var(--apple-spacing-md);
+    align-items: flex-end;
+  }
+
+  .modal,
+  .modal.modal-sm {
+    max-width: 100%;
+    border-radius: var(--apple-radius-xl) var(--apple-radius-xl) 0 0;
+  }
+
+  .modal-header {
+    padding: var(--apple-spacing-lg) var(--apple-spacing-md);
+  }
+
+  .modal-body {
+    padding: var(--apple-spacing-md);
+  }
+
+  .modal-footer {
+    padding: var(--apple-spacing-md);
+    flex-direction: column;
+    gap: var(--apple-spacing-sm);
+  }
+
+  .modal-footer .btn {
+    width: 100%;
+    min-height: var(--apple-touch-target);
+  }
+
+  .form-input {
+    min-height: var(--apple-touch-target);
+    font-size: 16px; /* 防止 iOS 缩放 */
+  }
+}
+
+/* 平板端适配 */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .app-sidebar {
+    width: var(--apple-sidebar-collapsed);
+  }
+
+  .app-sidebar .nav-group-title,
+  .app-sidebar .nav-label,
+  .app-sidebar .logo-text {
+    display: none;
+  }
+
+  .app-sidebar .nav-item {
+    justify-content: center;
+    padding: var(--apple-spacing-sm);
+  }
+
+  .app-sidebar .logo {
+    justify-content: center;
+  }
+
+  .sidebar-footer {
+    display: none;
+  }
 }
 </style>

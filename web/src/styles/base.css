@@ -373,3 +373,159 @@ input, textarea, select {
 .animate-slide-in-right { animation: apple-slide-in-right var(--apple-duration-normal) var(--apple-ease-default); }
 .animate-pulse { animation: apple-pulse 2s var(--apple-ease-in-out) infinite; }
 .animate-spin { animation: apple-spin 1s linear infinite; }
+
+/* ========================================
+   移动端响应式工具类 (Apple HIG)
+   ======================================== */
+
+/* 移动端隐藏/显示 */
+@media (max-width: 767px) {
+  .hide-mobile { display: none !important; }
+}
+@media (min-width: 768px) {
+  .show-mobile { display: none !important; }
+}
+
+/* 平板端隐藏/显示 */
+@media (max-width: 1023px) {
+  .hide-tablet { display: none !important; }
+}
+@media (min-width: 1024px) {
+  .show-tablet { display: none !important; }
+}
+
+/* 桌面端隐藏/显示 */
+@media (max-width: 1199px) {
+  .hide-desktop { display: none !important; }
+}
+@media (min-width: 1200px) {
+  .show-desktop { display: none !important; }
+}
+
+/* 移动端触控优化 */
+@media (max-width: 767px) {
+  /* 触控目标最小 44px */
+  .touch-target {
+    min-height: var(--apple-touch-target);
+    min-width: var(--apple-touch-target);
+  }
+
+  /* 移动端按钮增大 */
+  button, .btn, [role="button"] {
+    min-height: var(--apple-touch-target);
+  }
+
+  /* 移动端输入框增大 */
+  input, select, textarea {
+    min-height: var(--apple-touch-target);
+    font-size: 16px; /* 防止 iOS 自动缩放 */
+  }
+
+  /* 移动端间距调整 */
+  .page-header {
+    padding: var(--apple-spacing-md);
+  }
+}
+
+/* 移动端安全区域 */
+.safe-area-top {
+  padding-top: var(--apple-safe-area-top);
+}
+.safe-area-bottom {
+  padding-bottom: var(--apple-safe-area-bottom);
+}
+.safe-area-left {
+  padding-left: var(--apple-safe-area-left);
+}
+.safe-area-right {
+  padding-right: var(--apple-safe-area-right);
+}
+.safe-area-inset {
+  padding-top: var(--apple-safe-area-top);
+  padding-bottom: var(--apple-safe-area-bottom);
+  padding-left: var(--apple-safe-area-left);
+  padding-right: var(--apple-safe-area-right);
+}
+
+/* 移动端栈式布局 */
+@media (max-width: 767px) {
+  .stack-mobile {
+    flex-direction: column !important;
+  }
+  .stack-mobile > * {
+    width: 100% !important;
+  }
+}
+
+/* 移动端网格调整 */
+@media (max-width: 767px) {
+  .grid-cols-2,
+  .grid-cols-3,
+  .grid-cols-4 {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .grid-cols-3,
+  .grid-cols-4 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* 移动端文字大小调整 */
+@media (max-width: 767px) {
+  h1, .text-4xl, .text-5xl {
+    font-size: var(--apple-text-2xl) !important;
+  }
+  h2, .text-3xl {
+    font-size: var(--apple-text-xl) !important;
+  }
+  h3, .text-2xl {
+    font-size: var(--apple-text-lg) !important;
+  }
+}
+
+/* 移动端表格滚动容器 */
+.table-scroll-container {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 移动端卡片样式 */
+@media (max-width: 767px) {
+  .card-mobile-full {
+    margin-left: calc(var(--apple-spacing-md) * -1);
+    margin-right: calc(var(--apple-spacing-md) * -1);
+    border-radius: 0;
+  }
+}
+
+/* iOS 风格滑动指示器 */
+.scroll-indicator {
+  position: relative;
+}
+.scroll-indicator::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 36px;
+  height: 5px;
+  background: var(--apple-fill-tertiary);
+  border-radius: 2.5px;
+  margin-bottom: var(--apple-spacing-xs);
+}
+
+/* 减少动画偏好 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
