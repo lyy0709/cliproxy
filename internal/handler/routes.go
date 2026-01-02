@@ -291,6 +291,24 @@ func RegisterRoutes(r *gin.Engine) {
 			proxyConfigs.PUT("/:id/default", SetDefaultProxyConfig)   // 设置为默认代理
 		}
 
+		// 网关配置管理（xyrt 专用）
+		gatewayHandler := NewGatewayHandler()
+		gateways := admin.Group("/gateways")
+		{
+			gateways.GET("", gatewayHandler.List)                   // 获取网关列表
+			gateways.GET("/enabled", gatewayHandler.GetEnabled)     // 获取启用的网关（用于下拉选择）
+			gateways.GET("/default", gatewayHandler.GetDefault)     // 获取默认网关
+			gateways.DELETE("/default", gatewayHandler.ClearDefault) // 清除默认网关
+			gateways.POST("", gatewayHandler.Create)                // 创建网关
+			gateways.POST("/test", gatewayHandler.Test)             // 测试网关连通性
+			gateways.GET("/:id", gatewayHandler.Get)                // 获取单个网关
+			gateways.PUT("/:id", gatewayHandler.Update)             // 更新网关
+			gateways.DELETE("/:id", gatewayHandler.Delete)          // 删除网关
+			gateways.PUT("/:id/toggle", gatewayHandler.ToggleEnabled) // 切换启用状态
+			gateways.PUT("/:id/default", gatewayHandler.SetDefault)   // 设置为默认网关
+			gateways.POST("/:id/test", gatewayHandler.TestByID)       // 测试指定网关
+		}
+
 		// 系统监控
 		monitorHandler := NewSystemMonitorHandler()
 		monitor := admin.Group("/monitor")

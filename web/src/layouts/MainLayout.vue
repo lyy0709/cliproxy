@@ -99,6 +99,21 @@
           </router-link>
 
           <router-link
+            to="/admin/gateways"
+            :class="['nav-item', { active: isActive('/admin/gateways') }]"
+            @mouseenter="prefetchFor('/admin/gateways')"
+          >
+            <span class="nav-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="2" y1="12" x2="22" y2="12"/>
+                <path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/>
+              </svg>
+            </span>
+            <span v-if="!isCollapse" class="nav-label">网关管理</span>
+          </router-link>
+
+          <router-link
             to="/admin/models"
             :class="['nav-item', { active: isActive('/admin/models') }]"
             @mouseenter="prefetchFor('/admin/models')"
@@ -424,6 +439,7 @@ const pageTitles = {
   '/admin/system-monitor': '系统监控',
   '/admin/accounts': '账户管理',
   '/admin/proxies': '代理管理',
+  '/admin/gateways': '网关管理',
   '/admin/models': '模型管理',
   '/admin/request-logs': '请求日志',
   '/admin/account-load': '账户负载',
@@ -448,6 +464,7 @@ function prefetchFor(path) {
     '/admin/system-monitor': () => import('@/views/SystemMonitor.vue'),
     '/admin/accounts': () => import('@/views/Accounts.vue'),
     '/admin/proxies': () => import('@/views/Proxies.vue'),
+    '/admin/gateways': () => import('@/views/Gateways.vue'),
     '/admin/models': () => import('@/views/Models.vue'),
     '/admin/request-logs': () => import('@/views/RequestLogs.vue'),
     '/admin/account-load': () => import('@/views/AccountLoad.vue'),

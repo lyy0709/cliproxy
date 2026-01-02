@@ -88,6 +88,7 @@ type Account struct {
 	AzureAPIVersion     string `gorm:"size:20" json:"azure_api_version,omitempty"`
 
 	// xyrt 授权专用
+	GatewayID         *uint      `gorm:"index" json:"gateway_id,omitempty"`          // 关联的网关 ID
 	GatewayURL        string     `gorm:"size:200" json:"gateway_url,omitempty"`      // xyrt 网关地址（替换 chatgpt.com）
 	AuthType          string     `gorm:"size:30" json:"auth_type,omitempty"`         // 认证类型: oauth, cookie, xyrt
 	XyrtRefreshToken  string     `gorm:"type:text" json:"-"`                         // xyrt refresh token (xyhelpertoken...)
@@ -103,7 +104,8 @@ type Account struct {
 	DailyBudget    float64 `gorm:"default:0" json:"daily_budget"`             // 每日预算（美元），0 表示不限制
 
 	// 关联对象
-	Proxy *Proxy `gorm:"foreignKey:ProxyID" json:"proxy,omitempty"` // 代理配置
+	Gateway *Gateway `gorm:"foreignKey:GatewayID" json:"gateway,omitempty"` // 网关配置
+	Proxy   *Proxy   `gorm:"foreignKey:ProxyID" json:"proxy,omitempty"`     // 代理配置
 
 	// 统计字段
 	RequestCount           int64      `gorm:"default:0" json:"request_count"`              // 请求次数

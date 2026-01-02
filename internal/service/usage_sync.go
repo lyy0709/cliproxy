@@ -328,7 +328,10 @@ func (s *UsageSyncService) FetchOpenAICodexUsage(accountID uint) (*repository.Op
 	}
 
 	baseURL := account.BaseURL
-	if account.GatewayURL != "" {
+	if account.Type == model.AccountTypeOpenAIResponses && (account.AuthType == "xyrt" || account.GatewayURL != "") {
+		if account.GatewayURL == "" {
+			return nil, fmt.Errorf("xyrt 账户未配置网关")
+		}
 		baseURL = strings.TrimSuffix(account.GatewayURL, "/") + "/backend-api/codex"
 	} else {
 		if baseURL == "" {

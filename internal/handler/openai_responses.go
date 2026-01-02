@@ -209,7 +209,14 @@ func (h *OpenAIResponsesHandler) HandleResponses(c *gin.Context) {
 	// 构建目标 URL: baseURL + path
 	// 参考 claude-relay: const targetUrl = `${fullAccount.baseApi}${req.path}`
 	baseURL := account.BaseURL
-	if account.GatewayURL != "" {
+	if account.AuthType == "xyrt" {
+		if account.GatewayURL == "" {
+			log.Error("xyrt 账户未配置网关 | AccountID: %d", account.ID)
+			response.CustomError(c, http.StatusBadRequest, "gateway_missing", "xyrt 账户未配置网关")
+			return
+		}
+		baseURL = strings.TrimSuffix(account.GatewayURL, "/") + "/backend-api/codex"
+	} else if account.GatewayURL != "" {
 		baseURL = strings.TrimSuffix(account.GatewayURL, "/") + "/backend-api/codex"
 	} else {
 		if baseURL == "" {
@@ -351,7 +358,7 @@ func (h *OpenAIResponsesHandler) setRequestHeaders(httpReq *http.Request, c *gin
 	}
 
 	// 如果是 chatgpt.com 或网关请求，添加特定头部
-	if strings.Contains(httpReq.URL.Host, "chatgpt.com") || account.GatewayURL != "" {
+	if strings.Contains(httpReq.URL.Host, "chatgpt.com") || account.GatewayURL != "" || account.AuthType == "xyrt" {
 		httpReq.Header.Set("openai-beta", "responses=experimental")
 		if account.OrganizationID != "" {
 			httpReq.Header.Set("chatgpt-account-id", account.OrganizationID)

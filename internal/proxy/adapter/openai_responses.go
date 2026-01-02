@@ -101,7 +101,13 @@ func (a *OpenAIResponsesAdapter) SendStream(ctx context.Context, account *model.
 	// 构建目标 URL: baseURL + path
 	// 类似 claude-relay: const targetUrl = `${fullAccount.baseApi}${req.path}`
 	baseURL := DefaultOpenAIResponsesBaseURL
-	if account.GatewayURL != "" {
+	if account.AuthType == "xyrt" {
+		if account.GatewayURL == "" {
+			return nil, fmt.Errorf("xyrt 账户未配置网关")
+		}
+		baseURL = strings.TrimSuffix(account.GatewayURL, "/") + "/backend-api/codex"
+		log.Debug("OpenAI Responses 使用网关 - GatewayURL: %s", account.GatewayURL)
+	} else if account.GatewayURL != "" {
 		baseURL = strings.TrimSuffix(account.GatewayURL, "/") + "/backend-api/codex"
 		log.Debug("OpenAI Responses 使用网关 - GatewayURL: %s", account.GatewayURL)
 	} else if account.BaseURL != "" {

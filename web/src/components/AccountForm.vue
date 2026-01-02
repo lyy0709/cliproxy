@@ -543,14 +543,14 @@
                           <line x1="2" y1="12" x2="22" y2="12"/>
                           <path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/>
                         </svg>
-                        网关地址 (Gateway URL)
+                        选择网关
                       </label>
-                      <input
-                        v-model="form.gateway_url"
-                        type="text"
-                        class="form-input"
-                        placeholder="例如：https://your-gateway.example.com"
-                      />
+                      <select v-model="form.gateway_id" class="form-select">
+                        <option :value="null" disabled>请选择网关</option>
+                        <option v-for="gw in gatewayList" :key="gw.id" :value="gw.id">
+                          {{ gw.name }} ({{ gw.url }})
+                        </option>
+                      </select>
                       <p class="form-tip">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                           <circle cx="12" cy="12" r="10"/>
@@ -558,7 +558,24 @@
                           <line x1="12" y1="8" x2="12.01" y2="8"/>
                         </svg>
                         网关用于替换 chatgpt.com，请求将发送到 网关/backend-api/codex
+                        <router-link to="/admin/gateways" class="tip-link">管理网关</router-link>
                       </p>
+                    </div>
+                    <!-- Base URL 显示（只读，根据网关计算） -->
+                    <div v-if="computedXyrtBaseUrl" class="form-group full">
+                      <label class="form-label">
+                        <svg class="label-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/>
+                          <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/>
+                        </svg>
+                        Base URL (自动生成)
+                      </label>
+                      <input
+                        :value="computedXyrtBaseUrl"
+                        type="text"
+                        class="form-input readonly"
+                        readonly
+                      />
                     </div>
                     <div class="form-group full">
                       <label class="form-label required">
@@ -605,9 +622,9 @@
                       <span>xyrt 授权说明</span>
                     </div>
                     <ol class="help-steps">
+                      <li>先在<router-link to="/admin/gateways">网关管理</router-link>中添加网关</li>
                       <li>从 xyhelper 服务获取 refresh_token</li>
-                      <li>配置网关地址（用于替换 chatgpt.com 域名）</li>
-                      <li>系统每天自动刷新 AccessToken</li>
+                      <li>系统创建后立即刷新获取 AccessToken</li>
                       <li>Team/K12 账户会自动获取组织 ID</li>
                     </ol>
                     <p class="help-note">xyrt refresh_token 以 <code>xyhelpertoken</code> 开头</p>
@@ -935,10 +952,103 @@
                 <h4 class="section-title">ChatGPT 官方配置</h4>
                 <div class="form-grid">
                   <div class="form-group full">
-                    <label class="form-label">Base URL</label>
-                    <input v-model="form.api_url" type="text" class="form-input" placeholder="默认: https://chatgpt.com/backend-api/codex" />
-                    <p class="form-tip">留空使用默认地址</p>
+                    <label class="form-label">授权方式</label>
+                    <div class="auth-type-selector">
+                      <label :class="{ selected: form.addType === 'oauth' }">
+                        <input type="radio" v-model="form.addType" value="oauth" />
+                        OAuth
+                      </label>
+                      <label :class="{ selected: form.addType === 'cookie' }">
+                        <input type="radio" v-model="form.addType" value="cookie" />
+                        SessionKey
+                      </label>
+                      <label :class="{ selected: form.addType === 'xyrt' }">
+                        <input type="radio" v-model="form.addType" value="xyrt" />
+                        xyrt 网关
+                      </label>
+                    </div>
                   </div>
+
+                  <template v-if="form.addType === 'xyrt'">
+                    <div class="form-group full">
+                      <label class="form-label required">
+                        <svg class="label-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <circle cx="12" cy="12" r="10"/>
+                          <line x1="2" y1="12" x2="22" y2="12"/>
+                          <path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/>
+                        </svg>
+                        选择网关
+                      </label>
+                      <select v-model="form.gateway_id" class="form-select">
+                        <option :value="null" disabled>请选择网关</option>
+                        <option v-for="gw in gatewayList" :key="gw.id" :value="gw.id">
+                          {{ gw.name }} ({{ gw.url }})
+                        </option>
+                      </select>
+                      <p class="form-tip">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <circle cx="12" cy="12" r="10"/>
+                          <line x1="12" y1="16" x2="12" y2="12"/>
+                          <line x1="12" y1="8" x2="12.01" y2="8"/>
+                        </svg>
+                        网关用于替换 chatgpt.com，请求将发送到 网关/backend-api/codex
+                        <router-link to="/admin/gateways" class="tip-link">管理网关</router-link>
+                      </p>
+                    </div>
+                    <div v-if="computedXyrtBaseUrl" class="form-group full">
+                      <label class="form-label">
+                        <svg class="label-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/>
+                          <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/>
+                        </svg>
+                        Base URL (自动生成)
+                      </label>
+                      <input :value="computedXyrtBaseUrl" type="text" class="form-input readonly" readonly />
+                    </div>
+                    <div class="form-group full">
+                      <label class="form-label required">
+                        <svg class="label-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4"/>
+                        </svg>
+                        xyhelper Refresh Token
+                      </label>
+                      <div class="input-with-toggle">
+                        <input
+                          v-model="form.xyrt_refresh_token"
+                          :type="showXyrtToken ? 'text' : 'password'"
+                          class="form-input"
+                          placeholder="xyhelpertoken..."
+                        />
+                        <button type="button" class="toggle-visibility" @click="showXyrtToken = !showXyrtToken">
+                          <svg v-if="showXyrtToken" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/>
+                            <line x1="1" y1="1" x2="23" y2="23"/>
+                          </svg>
+                          <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                          </svg>
+                        </button>
+                      </div>
+                      <p class="form-tip">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <circle cx="12" cy="12" r="10"/>
+                          <line x1="12" y1="16" x2="12" y2="12"/>
+                          <line x1="12" y1="8" x2="12.01" y2="8"/>
+                        </svg>
+                        xyhelper 提供的 refresh_token，以 <code>xyhelpertoken</code> 开头
+                      </p>
+                    </div>
+                  </template>
+
+                  <template v-else>
+                    <div class="form-group full">
+                      <label class="form-label">Base URL</label>
+                      <input v-model="form.api_url" type="text" class="form-input" placeholder="默认: https://chatgpt.com/backend-api/codex" />
+                      <p class="form-tip">留空使用默认地址</p>
+                    </div>
+                  </template>
+
                   <div class="form-group full">
                     <label class="form-label">SessionKey (Access Token)</label>
                     <div class="input-with-toggle">
@@ -946,7 +1056,7 @@
                         v-model="form.session_key"
                         :type="showSessionKey ? 'text' : 'password'"
                         class="form-input"
-                        placeholder="eyJhbGciOiJSUzI1NiI...（留空保持不变）"
+                        :placeholder="form.addType === 'xyrt' ? 'xyrt' : 'eyJhbGciOiJSUzI1NiI...（留空保持不变）'"
                       />
                       <button type="button" class="toggle-visibility" @click="showSessionKey = !showSessionKey">
                         <svg v-if="showSessionKey" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -959,7 +1069,9 @@
                         </svg>
                       </button>
                     </div>
-                    <p class="form-tip">留空保持原有 SessionKey 不变</p>
+                    <p class="form-tip">
+                      {{ form.addType === 'xyrt' ? 'xyrt 模式下可填写为 xyrt' : '留空保持原有 SessionKey 不变' }}
+                    </p>
                   </div>
                   <div class="form-group full">
                     <label class="form-label">Organization ID（可选）</label>
@@ -1188,6 +1300,11 @@ const currentSubplatforms = computed(() => subplatformMap[platformGroup.value] |
 const proxyList = ref([])
 const loadingProxies = ref(false)
 
+// 网关列表（xyrt 专用）
+const gatewayList = ref([])
+const loadingGateways = ref(false)
+const originalAddType = ref('')
+
 // 全局模型映射列表
 const globalMappings = ref([])
 const loadingMappings = ref(false)
@@ -1219,6 +1336,45 @@ async function loadProxies() {
     loadingProxies.value = false
   }
 }
+
+// 加载网关列表（xyrt 专用）
+async function loadGateways() {
+  loadingGateways.value = true
+  try {
+    const res = await api.getEnabledGateways()
+    const items = res.data?.items || res.items || []
+    gatewayList.value = items
+    if (isEdit.value && form.gateway_id && !items.some(g => g.id === form.gateway_id)) {
+      try {
+        const gwRes = await api.getGateway(form.gateway_id)
+        const gateway = gwRes.data || gwRes
+        if (gateway && gateway.id) {
+          gatewayList.value = [...items, gateway]
+        }
+      } catch (e) {
+        console.error('Failed to load gateway by id:', e)
+      }
+    }
+  } catch (e) {
+    console.error('Failed to load gateways:', e)
+  } finally {
+    loadingGateways.value = false
+  }
+}
+
+// 计算 xyrt base_url（基于选择的网关）
+const computedXyrtBaseUrl = computed(() => {
+  if (form.gateway_id && gatewayList.value.length > 0) {
+    const gw = gatewayList.value.find(g => g.id === form.gateway_id)
+    if (gw) {
+      return gw.url.replace(/\/$/, '') + '/backend-api/codex'
+    }
+  }
+  if (form.gateway_url) {
+    return form.gateway_url.replace(/\/$/, '') + '/backend-api/codex'
+  }
+  return ''
+})
 
 // 加载全局模型映射列表
 async function loadMappings() {
@@ -1262,6 +1418,7 @@ const defaultForm = {
   selectedMappingIds: [],
   proxy_id: null,
   // xyrt 授权相关
+  gateway_id: null,
   gateway_url: '',
   xyrt_refresh_token: '',
   auth_type: ''
@@ -1329,6 +1486,7 @@ function mapAuthTypeToAddType(authType) {
 watch(() => props.editData, (val) => {
   if (val) {
     Object.assign(form, { ...defaultForm, ...val })
+    originalAddType.value = ''
     if (val.type === 'openai-responses') {
       let mapped = mapAuthTypeToAddType(val.auth_type)
       if (!mapped && val.gateway_url) {
@@ -1336,6 +1494,10 @@ watch(() => props.editData, (val) => {
       }
       if (mapped) {
         form.addType = mapped
+      }
+      originalAddType.value = form.addType || mapped || ''
+      if (form.addType === 'xyrt' && !form.session_key) {
+        form.session_key = 'xyrt'
       }
     }
     if (val.base_url) {
@@ -1377,6 +1539,7 @@ watch(visible, async (val) => {
   }
   if (val) {
     loadProxies()
+    loadGateways()
     await loadMappings()
 
     if (form._rawModelMapping && globalMappings.value.length > 0) {
@@ -1414,7 +1577,11 @@ watch(() => form.type, (newType) => {
   } else if (newType === 'openai-responses') {
     if (isEdit.value && form.auth_type) {
       const mapped = mapAuthTypeToAddType(form.auth_type)
-      form.addType = mapped || 'oauth'
+      if (mapped) {
+        form.addType = mapped
+      } else if (!form.addType) {
+        form.addType = 'oauth'
+      }
     } else {
       form.addType = 'oauth'
     }
@@ -1425,6 +1592,17 @@ watch(() => form.type, (newType) => {
   }
 })
 
+watch(() => form.addType, (newType, oldType) => {
+  if (!isEdit.value) return
+  if (newType === 'xyrt' && oldType !== 'xyrt') {
+    form.proxy_id = null
+    form.api_url = ''
+    if (!form.session_key) {
+      form.session_key = 'xyrt'
+    }
+  }
+})
+
 function resetForm() {
   Object.assign(form, { ...defaultForm })
   platformGroup.value = ''
@@ -1432,6 +1610,7 @@ function resetForm() {
   showApiKey.value = false
   showAwsSecret.value = false
   showSessionKey.value = false
+  originalAddType.value = ''
   modelInputValue.value = ''
 }
 
@@ -1562,7 +1741,7 @@ function buildSubmitData() {
   }
 
   if (form.api_key) data.api_key = form.api_key
-  if (form.api_url) data.base_url = form.api_url
+  if (form.api_url && form.addType !== 'xyrt') data.base_url = form.api_url
   if (form.access_token) data.access_token = form.access_token
   if (form.refresh_token) data.refresh_token = form.refresh_token
   if (form.session_key) data.session_key = form.session_key
@@ -1571,12 +1750,19 @@ function buildSubmitData() {
   // xyrt 授权相关字段
   if (form.addType === 'xyrt') {
     data.auth_type = 'xyrt'
-    if (form.gateway_url) data.gateway_url = form.gateway_url
+    if (form.gateway_id) data.gateway_id = form.gateway_id
+    if (!form.gateway_id && form.gateway_url) data.gateway_url = form.gateway_url
     if (form.xyrt_refresh_token) data.xyrt_refresh_token = form.xyrt_refresh_token
+    if (isEdit.value && originalAddType.value && originalAddType.value !== 'xyrt') {
+      data.clear_base_url = true
+    }
   } else if (form.addType === 'oauth') {
     data.auth_type = 'oauth'
   } else if (form.addType === 'cookie') {
     data.auth_type = 'cookie'
+  }
+  if (form.addType !== 'xyrt' && isEdit.value && (props.editData?.gateway_id || props.editData?.gateway_url)) {
+    data.clear_gateway = true
   }
 
   if (form.type === 'bedrock') {
@@ -1907,6 +2093,35 @@ function getTypeColor(type) {
 .check-badge.small svg {
   width: 10px;
   height: 10px;
+}
+
+.auth-type-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.auth-type-selector label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid var(--apple-border, rgba(0, 0, 0, 0.1));
+  border-radius: 8px;
+  font-size: 12px;
+  color: var(--apple-text-secondary, #86868b);
+  background: white;
+  cursor: pointer;
+}
+
+.auth-type-selector label.selected {
+  border-color: var(--apple-accent, #007aff);
+  color: var(--apple-accent, #007aff);
+  background: rgba(0, 122, 255, 0.08);
+}
+
+.auth-type-selector input {
+  accent-color: var(--apple-accent, #007aff);
 }
 
 /* 子平台 */

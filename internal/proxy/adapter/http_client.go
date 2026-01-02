@@ -282,8 +282,8 @@ func GetEffectiveProxy(account *model.Account) string {
 		return ""
 	}
 
-	// xyrt 或配置了网关时强制直连，忽略代理
-	if account.AuthType == "xyrt" || account.GatewayURL != "" {
+	// openai-responses 的 xyrt 或配置了网关时强制直连，忽略代理
+	if account.Type == model.AccountTypeOpenAIResponses && (account.AuthType == "xyrt" || account.GatewayURL != "") {
 		return ""
 	}
 

@@ -11,8 +11,10 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"sync"
+	"time"
 
 	"cli-proxy/internal/model"
 	"cli-proxy/internal/proxy/scheduler"
@@ -89,6 +91,7 @@ type CreateAccountRequest struct {
 	AllowedModels       string `json:"allowed_models"`
 	ProxyID             *uint  `json:"proxy_id"`
 	// xyrt 授权相关
+	GatewayID        *uint  `json:"gateway_id"`         // 网关 ID
 	GatewayURL       string `json:"gateway_url"`        // xyrt 网关地址
 	AuthType         string `json:"auth_type"`          // 认证类型: oauth, cookie, xyrt
 	XyrtRefreshToken string `json:"xyrt_refresh_token"` // xyrt refresh token
@@ -117,6 +120,7 @@ type UpdateAccountRequest struct {
 	AzureDeploymentName string `json:"azure_deployment_name"`
 	AzureAPIVersion     string `json:"azure_api_version"`
 	BaseURL             string `json:"base_url"`
+	ClearBaseURL        bool   `json:"clear_base_url"`
 	ModelMapping        string `json:"model_mapping"`
 	AllowedModels       string `json:"allowed_models"`
 	ProxyID             *uint  `json:"proxy_id"`
@@ -124,6 +128,8 @@ type UpdateAccountRequest struct {
 	ClearModelMapping   bool   `json:"clear_model_mapping"`  // 是否清除模型映射
 	ClearAllowedModels  bool   `json:"clear_allowed_models"` // 是否清除允许的模型列表
 	// xyrt 授权相关
+	GatewayID        *uint  `json:"gateway_id"`         // 网关 ID
+	ClearGateway     bool   `json:"clear_gateway"`      // 是否清除网关
 	GatewayURL       string `json:"gateway_url"`        // xyrt 网关地址
 	AuthType         string `json:"auth_type"`          // 认证类型: oauth, cookie, xyrt
 	XyrtRefreshToken string `json:"xyrt_refresh_token"` // xyrt refresh token
@@ -170,10 +176,20 @@ func (s *AccountService) Create(req *CreateAccountRequest) (*model.Account, erro
 		AllowedModels:       req.AllowedModels,
 		ProxyID:             req.ProxyID,
 		// xyrt 授权相关
+		GatewayID:        req.GatewayID,
 		GatewayURL:       req.GatewayURL,
 		AuthType:         req.AuthType,
 		XyrtRefreshToken: req.XyrtRefreshToken,
 	}
+
+	// 如果设置了 GatewayID，从 Gateway 获取 URL 填充 GatewayURL
+	if account.GatewayID != nil {
+		gatewayRepo := repository.NewGatewayRepository()
+		if gw, err := gatewayRepo.GetByID(*account.GatewayID); err == nil && gw != nil {
+			account.GatewayURL = gw.URL
+		}
+	}
+
 	if account.Type == model.AccountTypeOpenAIResponses {
 		account.AuthType = inferOpenAIResponsesAuthType(
 			account.AuthType,
@@ -202,6 +218,19 @@ func (s *AccountService) Create(req *CreateAccountRequest) (*model.Account, erro
 
 	// 刷新调度器缓存
 	scheduler.GetScheduler().Refresh()
+
+	// 如果是 xyrt 类型，立即触发一次 token 刷新
+	if account.Type == model.AccountTypeOpenAIResponses && account.AuthType == "xyrt" && account.XyrtRefreshToken != "" {
+		go func(acc *model.Account) {
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+			if err := scheduler.GetTokenManager().RefreshXyrtToken(ctx, acc); err != nil {
+				getAccountLog().Warn("[account] xyrt 账户创建后自动刷新失败 | AccountID: %d | 原因: %v", acc.ID, err)
+			} else {
+				getAccountLog().Info("[account] xyrt 账户创建后自动刷新成功 | AccountID: %d", acc.ID)
+			}
+		}(account)
+	}
 
 	getAccountLog().Info("[account] 创建账户成功 | AccountID: %d | Name: %s | Type: %s", account.ID, account.Name, account.Type)
 	return account, nil
@@ -282,6 +311,8 @@ func (s *AccountService) Update(id uint, req *UpdateAccountRequest) (*model.Acco
 	}
 	if req.BaseURL != "" {
 		account.BaseURL = req.BaseURL
+	} else if req.ClearBaseURL {
+		account.BaseURL = ""
 	}
 	if req.ModelMapping != "" {
 		account.ModelMapping = req.ModelMapping
@@ -294,7 +325,17 @@ func (s *AccountService) Update(id uint, req *UpdateAccountRequest) (*model.Acco
 		account.AllowedModels = ""
 	}
 	// xyrt 授权相关
-	if req.GatewayURL != "" {
+	if req.ClearGateway {
+		account.GatewayID = nil
+		account.GatewayURL = ""
+	} else if req.GatewayID != nil {
+		account.GatewayID = req.GatewayID
+		// 从 Gateway 获取 URL
+		gatewayRepo := repository.NewGatewayRepository()
+		if gw, err := gatewayRepo.GetByID(*req.GatewayID); err == nil && gw != nil {
+			account.GatewayURL = gw.URL
+		}
+	} else if req.GatewayURL != "" {
 		account.GatewayURL = req.GatewayURL
 	}
 	if req.AuthType != "" {
@@ -336,6 +377,22 @@ func (s *AccountService) Update(id uint, req *UpdateAccountRequest) (*model.Acco
 
 	// 刷新调度器缓存
 	scheduler.GetScheduler().Refresh()
+
+	// 如果切换到 xyrt 或更新了 xyrt 配置，立即触发一次 token 刷新
+	if account.Type == model.AccountTypeOpenAIResponses && account.AuthType == "xyrt" && account.XyrtRefreshToken != "" {
+		shouldRefresh := req.AuthType == "xyrt" || req.XyrtRefreshToken != "" || req.GatewayID != nil || req.GatewayURL != ""
+		if shouldRefresh {
+			go func(acc *model.Account) {
+				ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+				defer cancel()
+				if err := scheduler.GetTokenManager().RefreshXyrtToken(ctx, acc); err != nil {
+					getAccountLog().Warn("[account] xyrt 账户更新后自动刷新失败 | AccountID: %d | 原因: %v", acc.ID, err)
+				} else {
+					getAccountLog().Info("[account] xyrt 账户更新后自动刷新成功 | AccountID: %d", acc.ID)
+				}
+			}(account)
+		}
+	}
 
 	return account, nil
 }

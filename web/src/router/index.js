@@ -101,6 +101,11 @@ const routes = [
         component: () => import('@/views/Proxies.vue')
       },
       {
+        path: 'gateways',
+        name: 'Gateways',
+        component: () => import('@/views/Gateways.vue')
+      },
+      {
         path: 'operation-logs',
         name: 'OperationLogs',
         component: () => import('@/views/OperationLogs.vue')

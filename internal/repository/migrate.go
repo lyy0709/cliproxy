@@ -18,6 +18,7 @@ import (
 func AutoMigrate() error {
 	return DB.AutoMigrate(
 		&model.Proxy{},
+		&model.Gateway{}, // xyrt 网关配置
 		&model.Account{},
 		&model.AccountGroup{},
 		&model.RequestLog{},

@@ -176,6 +176,20 @@ export default {
   toggleProxyConfig: (id) => Put(`/admin/proxy-configs/${id}/toggle`),
   testProxyConnectivity: (data) => Post('/admin/proxy-configs/test', data),
 
+  // Admin - Gateway Configs (网关配置管理 - xyrt 专用)
+  getGateways: (params) => Get('/admin/gateways', { params }),
+  getEnabledGateways: () => Get('/admin/gateways/enabled'),
+  getDefaultGateway: () => Get('/admin/gateways/default'),
+  setDefaultGateway: (id) => Put(`/admin/gateways/${id}/default`),
+  clearDefaultGateway: () => Delete('/admin/gateways/default'),
+  getGateway: (id) => Get(`/admin/gateways/${id}`),
+  createGateway: (data) => Post('/admin/gateways', data),
+  updateGateway: (id, data) => Put(`/admin/gateways/${id}`, data),
+  deleteGateway: (id) => Delete(`/admin/gateways/${id}`),
+  toggleGateway: (id) => Put(`/admin/gateways/${id}/toggle`),
+  testGateway: (data) => Post('/admin/gateways/test', data),
+  testGatewayById: (id) => Post(`/admin/gateways/${id}/test`),
+
   // Admin - Operation Logs (操作日志)
   getOperationLogs: (params) => Get('/admin/operation-logs', { params }),
   getOperationLog: (id) => Get(`/admin/operation-logs/${id}`),
