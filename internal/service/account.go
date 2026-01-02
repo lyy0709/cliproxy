@@ -44,6 +44,22 @@ func NewAccountService() *AccountService {
 	}
 }
 
+func inferOpenAIResponsesAuthType(authType, gatewayURL, xyrtRefreshToken, refreshToken, sessionKey, accessToken string) string {
+	if authType != "" {
+		return authType
+	}
+	if gatewayURL != "" || xyrtRefreshToken != "" {
+		return "xyrt"
+	}
+	if sessionKey != "" {
+		return "cookie"
+	}
+	if refreshToken != "" || accessToken != "" {
+		return "oauth"
+	}
+	return ""
+}
+
 // Account requests
 
 type CreateAccountRequest struct {
@@ -157,6 +173,16 @@ func (s *AccountService) Create(req *CreateAccountRequest) (*model.Account, erro
 		GatewayURL:       req.GatewayURL,
 		AuthType:         req.AuthType,
 		XyrtRefreshToken: req.XyrtRefreshToken,
+	}
+	if account.Type == model.AccountTypeOpenAIResponses {
+		account.AuthType = inferOpenAIResponsesAuthType(
+			account.AuthType,
+			account.GatewayURL,
+			account.XyrtRefreshToken,
+			account.RefreshToken,
+			account.SessionKey,
+			account.AccessToken,
+		)
 	}
 
 	if account.Priority == 0 {
@@ -276,6 +302,16 @@ func (s *AccountService) Update(id uint, req *UpdateAccountRequest) (*model.Acco
 	}
 	if req.XyrtRefreshToken != "" {
 		account.XyrtRefreshToken = req.XyrtRefreshToken
+	}
+	if account.Type == model.AccountTypeOpenAIResponses {
+		account.AuthType = inferOpenAIResponsesAuthType(
+			account.AuthType,
+			account.GatewayURL,
+			account.XyrtRefreshToken,
+			account.RefreshToken,
+			account.SessionKey,
+			account.AccessToken,
+		)
 	}
 	// 处理代理：ClearProxy 优先级高于 ProxyID
 	clearProxyAfterUpdate := false

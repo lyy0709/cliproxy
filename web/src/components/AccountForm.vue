@@ -1330,7 +1330,10 @@ watch(() => props.editData, (val) => {
   if (val) {
     Object.assign(form, { ...defaultForm, ...val })
     if (val.type === 'openai-responses') {
-      const mapped = mapAuthTypeToAddType(val.auth_type)
+      let mapped = mapAuthTypeToAddType(val.auth_type)
+      if (!mapped && val.gateway_url) {
+        mapped = 'xyrt'
+      }
       if (mapped) {
         form.addType = mapped
       }

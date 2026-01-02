@@ -764,7 +764,8 @@ func (r *AccountRepository) UpdateXyrtToken(id uint, accessToken, orgID, planTyp
 func (r *AccountRepository) GetXyrtAccountsNeedingRefresh() ([]model.Account, error) {
 	var accounts []model.Account
 	oneDayAgo := time.Now().Add(-24 * time.Hour)
-	err := r.db.Where("type = ? AND enabled = ? AND auth_type = ? AND (last_xyrt_refresh_at IS NULL OR last_xyrt_refresh_at < ?)",
+	err := r.db.Where(
+		"type = ? AND enabled = ? AND (auth_type = ? OR (gateway_url <> '' AND xyrt_refresh_token <> '')) AND (last_xyrt_refresh_at IS NULL OR last_xyrt_refresh_at < ?)",
 		model.AccountTypeOpenAIResponses, true, "xyrt", oneDayAgo).
 		Find(&accounts).Error
 	return accounts, err

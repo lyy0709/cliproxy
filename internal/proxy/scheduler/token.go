@@ -319,6 +319,11 @@ func (m *TokenManager) ForceRefresh(ctx context.Context, accountID uint) error {
 
 // ========== xyrt Token 刷新相关 ==========
 
+// RefreshXyrtToken 刷新 xyrt Token（导出方法，供其他包调用）
+func (m *TokenManager) RefreshXyrtToken(ctx context.Context, account *model.Account) error {
+	return m.refreshXyrtToken(ctx, account)
+}
+
 // getXyrtLog 懒加载获取 xyrt 日志器（避免包初始化顺序问题）
 func getXyrtLog() *logger.Logger {
 	return logger.GetLogger("xyrt")
@@ -370,6 +375,7 @@ func (m *TokenManager) refreshXyrtToken(ctx context.Context, account *model.Acco
 	// 解析响应
 	var tokenResp struct {
 		AccessToken      string `json:"accessToken"`
+		AccessTokenAlt   string `json:"access_token"`
 		AccountCheckInfo struct {
 			TeamIDs  []string `json:"team_ids"`
 			PlanType string   `json:"plan_type"`
@@ -383,6 +389,12 @@ func (m *TokenManager) refreshXyrtToken(ctx context.Context, account *model.Acco
 		return err
 	}
 
+	// 兼容不同字段名
+	accessToken := tokenResp.AccessToken
+	if accessToken == "" {
+		accessToken = tokenResp.AccessTokenAlt
+	}
+
 	// 更新账户
 	now := time.Now()
 	orgID := ""
@@ -394,7 +406,7 @@ func (m *TokenManager) refreshXyrtToken(ctx context.Context, account *model.Acco
 	}
 
 	// 更新数据库
-	if err := m.repo.UpdateXyrtToken(account.ID, tokenResp.AccessToken, orgID, planType, &now); err != nil {
+	if err := m.repo.UpdateXyrtToken(account.ID, accessToken, orgID, planType, &now); err != nil {
 		getXyrtLog().Error("[xyrt] Token 更新失败 | AccountID: %d | 原因: %v", account.ID, err)
 		return err
 	}

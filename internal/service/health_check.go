@@ -922,6 +922,28 @@ func (s *AccountHealthCheckService) checkOpenAIResponses(ctx context.Context, ac
 		return false, fmt.Sprintf("HTTP %d: %s", resp.StatusCode, string(body))
 	}
 
+	// 如果是 xyrt 授权类型，先尝试刷新 token
+	isXyrt := account.AuthType == "xyrt" || (account.GatewayURL != "" && account.XyrtRefreshToken != "")
+	if isXyrt && account.XyrtRefreshToken != "" {
+		if account.GatewayURL == "" {
+			return false, "xyrt 账户未配置网关地址"
+		}
+		// 尝试刷新 xyrt token
+		tokenManager := scheduler.GetTokenManager()
+		if err := tokenManager.RefreshXyrtToken(ctx, account); err != nil {
+			return false, fmt.Sprintf("xyrt Token 刷新失败: %v", err)
+		}
+		// 刷新成功后，重新加载账号并使用新的 AccessToken 进行验证
+		refreshedAccount, err := s.accountRepo.GetByID(account.ID)
+		if err == nil {
+			account = refreshedAccount
+		}
+		if account.AccessToken != "" {
+			return s.checkChatGPTOAuth(ctx, account, account.AccessToken)
+		}
+		return false, "xyrt Token 刷新后 AccessToken 仍为空"
+	}
+
 	// 如果使用 OAuth Token（access_token 或 session_key），通过 ChatGPT backend-api 验证
 	token := account.AccessToken
 	if token == "" {
