@@ -1,7 +1,7 @@
 import{_ as w,r as k,q as _,c as l,b as e,i as c,j as u,k as C,d as h,t as a,s as p,F as b,x as B,p as y,E as m,n as i}from"./index-CQyKkE5B.js";const M={class:"home-page"},A={class:"navbar"},I={class:"navbar-content"},H={class:"nav-actions"},E={class:"main-content"},P={class:"hero"},T={class:"hero-actions"},N={class:"endpoints-section"},O={class:"endpoints-grid"},V={class:"endpoint-card"},$={class:"endpoint-url"},q={key:0,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor","stroke-width":"2"},z={key:1,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor","stroke-width":"2"},S={class:"endpoint-card"},L={class:"endpoint-url"},R={key:0,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor","stroke-width":"2"},U={key:1,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor","stroke-width":"2"},j={class:"endpoint-card"},F={class:"endpoint-url"},G={key:0,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor","stroke-width":"2"},K={key:1,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor","stroke-width":"2"},Y={class:"config-section"},D={class:"config-card"},J={class:"config-tabs"},Q=["onClick"],W={class:"config-content"},X={__name:"Home",setup(Z){const t=k(window.location.origin),s=k(""),g=k("claude"),f=[{id:"claude",name:"Claude"},{id:"openai",name:"OpenAI"},{id:"bash",name:"Bash"}],x=_(()=>({claude:`# Claude 配置
 export ANTHROPIC_BASE_URL="${t.value}/claude"
 export ANTHROPIC_API_KEY="your-api-key"`,openai:`# OpenAI 配置
-export OPENAI_API_BASE="${t.value}/openai/v1"
+export OPENAI_API_BASE="${t.value}/openai"
 export OPENAI_API_KEY="your-api-key"`,bash:`# 测试连接
 curl ${t.value}/claude/v1/messages \\
   -H "Content-Type: application/json" \\

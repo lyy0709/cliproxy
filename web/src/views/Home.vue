@@ -189,7 +189,7 @@ const configCode = computed(() => {
 export ANTHROPIC_BASE_URL="${baseUrl.value}/claude"
 export ANTHROPIC_API_KEY="your-api-key"`,
     openai: `# OpenAI 配置
-export OPENAI_API_BASE="${baseUrl.value}/openai/v1"
+export OPENAI_API_BASE="${baseUrl.value}/openai"
 export OPENAI_API_KEY="your-api-key"`,
     bash: `# 测试连接
 curl ${baseUrl.value}/claude/v1/messages \\
