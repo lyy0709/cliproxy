@@ -378,10 +378,10 @@ func (s *AccountService) Update(id uint, req *UpdateAccountRequest) (*model.Acco
 	// 刷新调度器缓存
 	scheduler.GetScheduler().Refresh()
 
-	// 如果切换到 xyrt 或更新了 xyrt 配置，立即触发一次 token 刷新
+	// 只有当提供了新的 xyrt refresh token 时才触发刷新
+	// 如果只是编辑其他字段（名称、网关等），不应该触发刷新
 	if account.Type == model.AccountTypeOpenAIResponses && account.AuthType == "xyrt" && account.XyrtRefreshToken != "" {
-		shouldRefresh := req.AuthType == "xyrt" || req.XyrtRefreshToken != "" || req.GatewayID != nil || req.GatewayURL != ""
-		if shouldRefresh {
+		if req.XyrtRefreshToken != "" {
 			go func(acc *model.Account) {
 				ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 				defer cancel()
