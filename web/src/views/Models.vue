@@ -50,13 +50,22 @@
               <option value="gemini">Gemini</option>
             </select>
           </div>
-          <button class="btn btn-primary" @click="showAddDialog">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="12" y1="5" x2="12" y2="19"/>
-              <line x1="5" y1="12" x2="19" y2="12"/>
-            </svg>
-            添加模型
-          </button>
+          <div class="toolbar-actions">
+            <button class="btn btn-outline btn-warning" @click="confirmResetModels">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="23,4 23,10 17,10"/>
+                <path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/>
+              </svg>
+              重置模型
+            </button>
+            <button class="btn btn-primary" @click="showAddDialog">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              添加模型
+            </button>
+          </div>
         </div>
 
         <div class="table-container">
@@ -462,6 +471,35 @@
         </div>
       </div>
     </Teleport>
+
+    <!-- 重置模型确认弹窗 -->
+    <Teleport to="body">
+      <div v-if="resetDialogVisible" class="modal-overlay" @click.self="resetDialogVisible = false">
+        <div class="modal modal-sm">
+          <div class="modal-header warning">
+            <div class="warning-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+            </div>
+            <h2>重置为默认模型</h2>
+          </div>
+          <div class="modal-body">
+            <p class="reset-message">此操作将<strong>删除所有现有模型</strong>并恢复为系统默认模型配置。</p>
+            <p class="reset-warning">包含最新的 Claude Code、OpenAI Codex、Gemini CLI 模型及价格配置。</p>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" @click="resetDialogVisible = false">取消</button>
+            <button class="btn btn-warning" :disabled="resetting" @click="handleResetModels">
+              <span v-if="resetting" class="btn-loading"></span>
+              {{ resetting ? '重置中...' : '确认重置' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -610,6 +648,28 @@ function confirmDeleteModel(row) {
   deleteType.value = 'model'
   deleteMessage.value = `确定删除模型 "${row.name}" 吗？`
   deleteDialogVisible.value = true
+}
+
+// 重置模型相关
+const resetDialogVisible = ref(false)
+const resetting = ref(false)
+
+function confirmResetModels() {
+  resetDialogVisible.value = true
+}
+
+async function handleResetModels() {
+  resetting.value = true
+  try {
+    await api.resetModels()
+    ElMessage.success('模型已重置为默认配置')
+    resetDialogVisible.value = false
+    loadModels()
+  } catch (e) {
+    ElMessage.error(e.message || '重置失败')
+  } finally {
+    resetting.value = false
+  }
 }
 
 // 映射相关方法
@@ -1152,6 +1212,25 @@ watch(activeTab, (newTab) => {
   background: #e6362d;
 }
 
+.btn-warning {
+  background: var(--apple-orange);
+  color: white;
+}
+
+.btn-warning:hover:not(:disabled) {
+  background: #e67e00;
+}
+
+.btn-outline.btn-warning {
+  background: transparent;
+  color: var(--apple-orange);
+  border: 1px solid var(--apple-orange);
+}
+
+.btn-outline.btn-warning:hover:not(:disabled) {
+  background: rgba(255, 149, 0, 0.1);
+}
+
 .btn-outline {
   background: transparent;
   color: var(--apple-blue);
@@ -1230,6 +1309,46 @@ watch(activeTab, (newTab) => {
   width: 28px;
   height: 28px;
   color: var(--apple-red);
+}
+
+.modal-header.warning {
+  flex-direction: column;
+  text-align: center;
+  gap: var(--apple-spacing-md);
+}
+
+.warning-icon {
+  width: 56px;
+  height: 56px;
+  background: rgba(255, 149, 0, 0.15);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.warning-icon svg {
+  width: 28px;
+  height: 28px;
+  color: var(--apple-orange);
+}
+
+.reset-message {
+  font-size: var(--apple-text-base);
+  color: var(--apple-text-primary);
+  text-align: center;
+  margin: 0 0 var(--apple-spacing-sm) 0;
+}
+
+.reset-message strong {
+  color: var(--apple-red);
+}
+
+.reset-warning {
+  font-size: var(--apple-text-sm);
+  color: var(--apple-text-secondary);
+  text-align: center;
+  margin: 0;
 }
 
 .modal-header h2 {

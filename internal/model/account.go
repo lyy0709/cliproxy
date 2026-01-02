@@ -83,9 +83,16 @@ type Account struct {
 	AWSSessionToken string `gorm:"type:text" json:"-"`
 
 	// Azure OpenAI 专用
-	AzureEndpoint      string `gorm:"size:200" json:"azure_endpoint,omitempty"`
+	AzureEndpoint       string `gorm:"size:200" json:"azure_endpoint,omitempty"`
 	AzureDeploymentName string `gorm:"size:100" json:"azure_deployment_name,omitempty"`
-	AzureAPIVersion    string `gorm:"size:20" json:"azure_api_version,omitempty"`
+	AzureAPIVersion     string `gorm:"size:20" json:"azure_api_version,omitempty"`
+
+	// xyrt 授权专用
+	GatewayURL        string     `gorm:"size:200" json:"gateway_url,omitempty"`      // xyrt 网关地址（替换 chatgpt.com）
+	AuthType          string     `gorm:"size:30" json:"auth_type,omitempty"`         // 认证类型: oauth, cookie, xyrt
+	XyrtRefreshToken  string     `gorm:"type:text" json:"-"`                         // xyrt refresh token (xyhelpertoken...)
+	LastXyrtRefreshAt *time.Time `json:"last_xyrt_refresh_at,omitempty"`             // 上次 xyrt 刷新时间
+	PlanType          string     `gorm:"size:30" json:"plan_type,omitempty"`         // 账户类型: free, plus, team, k12 等
 
 	// 通用配置
 	BaseURL        string  `gorm:"size:200" json:"base_url,omitempty"`        // 自定义 Base URL
@@ -180,6 +187,9 @@ func (a *Account) BeforeSave(tx *gorm.DB) error {
 	if a.AWSSessionToken, err = utils.EncryptString(a.AWSSessionToken); err != nil {
 		return err
 	}
+	if a.XyrtRefreshToken, err = utils.EncryptString(a.XyrtRefreshToken); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -210,6 +220,9 @@ func (a *Account) AfterFind(tx *gorm.DB) error {
 		return err
 	}
 	if a.AWSSessionToken, err = utils.DecryptString(a.AWSSessionToken); err != nil {
+		return err
+	}
+	if a.XyrtRefreshToken, err = utils.DecryptString(a.XyrtRefreshToken); err != nil {
 		return err
 	}
 

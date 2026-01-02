@@ -72,6 +72,10 @@ type CreateAccountRequest struct {
 	ModelMapping        string `json:"model_mapping"`
 	AllowedModels       string `json:"allowed_models"`
 	ProxyID             *uint  `json:"proxy_id"`
+	// xyrt 授权相关
+	GatewayURL       string `json:"gateway_url"`        // xyrt 网关地址
+	AuthType         string `json:"auth_type"`          // 认证类型: oauth, cookie, xyrt
+	XyrtRefreshToken string `json:"xyrt_refresh_token"` // xyrt refresh token
 }
 
 type UpdateAccountRequest struct {
@@ -103,6 +107,10 @@ type UpdateAccountRequest struct {
 	ClearProxy          bool   `json:"clear_proxy"`          // 是否清除代理（设置为 true 时清空 proxy_id）
 	ClearModelMapping   bool   `json:"clear_model_mapping"`  // 是否清除模型映射
 	ClearAllowedModels  bool   `json:"clear_allowed_models"` // 是否清除允许的模型列表
+	// xyrt 授权相关
+	GatewayURL       string `json:"gateway_url"`        // xyrt 网关地址
+	AuthType         string `json:"auth_type"`          // 认证类型: oauth, cookie, xyrt
+	XyrtRefreshToken string `json:"xyrt_refresh_token"` // xyrt refresh token
 }
 
 // Account operations
@@ -145,6 +153,10 @@ func (s *AccountService) Create(req *CreateAccountRequest) (*model.Account, erro
 		ModelMapping:        req.ModelMapping,
 		AllowedModels:       req.AllowedModels,
 		ProxyID:             req.ProxyID,
+		// xyrt 授权相关
+		GatewayURL:       req.GatewayURL,
+		AuthType:         req.AuthType,
+		XyrtRefreshToken: req.XyrtRefreshToken,
 	}
 
 	if account.Priority == 0 {
@@ -254,6 +266,16 @@ func (s *AccountService) Update(id uint, req *UpdateAccountRequest) (*model.Acco
 		account.AllowedModels = req.AllowedModels
 	} else if req.ClearAllowedModels {
 		account.AllowedModels = ""
+	}
+	// xyrt 授权相关
+	if req.GatewayURL != "" {
+		account.GatewayURL = req.GatewayURL
+	}
+	if req.AuthType != "" {
+		account.AuthType = req.AuthType
+	}
+	if req.XyrtRefreshToken != "" {
+		account.XyrtRefreshToken = req.XyrtRefreshToken
 	}
 	// 处理代理：ClearProxy 优先级高于 ProxyID
 	clearProxyAfterUpdate := false

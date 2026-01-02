@@ -1,10 +1,11 @@
 /*
- * 文件作用：OAuth Token 管理器，处理 Claude/OpenAI OAuth Token 刷新
+ * 文件作用：OAuth Token 管理器，处理 Claude/OpenAI/xyrt OAuth Token 刷新
  * 负责功能：
  *   - Access Token 自动刷新
  *   - Token 过期检测
  *   - 刷新锁防止并发刷新
  *   - Token 持久化更新
+ *   - xyrt Token 每日定时刷新
  * 重要程度：⭐⭐⭐⭐ 重要（OAuth账户必需）
  * 依赖模块：model, repository
  */
@@ -17,12 +18,14 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 	"sync"
 	"time"
 
 	"cli-proxy/internal/model"
 	"cli-proxy/internal/proxy/adapter"
 	"cli-proxy/internal/repository"
+	"cli-proxy/pkg/logger"
 	"cli-proxy/pkg/utils"
 )
 
@@ -49,6 +52,8 @@ func GetTokenManager() *TokenManager {
 		}
 		// 启动后台刷新协程
 		go defaultTokenManager.backgroundRefresh()
+		// 启动 xyrt 每日刷新协程
+		go defaultTokenManager.dailyXyrtRefresh()
 	})
 	return defaultTokenManager
 }
@@ -300,10 +305,147 @@ func (m *TokenManager) ForceRefresh(ctx context.Context, accountID uint) error {
 	case model.AccountTypeClaudeOfficial:
 		return m.refreshClaudeOfficialToken(ctx, account)
 	case model.AccountTypeOpenAI, model.AccountTypeOpenAIResponses:
+		// xyrt 类型使用专门的刷新方法
+		if account.AuthType == "xyrt" {
+			return m.refreshXyrtToken(ctx, account)
+		}
 		return m.refreshOpenAIToken(ctx, account)
 	case model.AccountTypeGemini:
 		return m.refreshGeminiToken(ctx, account)
 	default:
 		return fmt.Errorf("account type %s does not support token refresh", account.Type)
+	}
+}
+
+// ========== xyrt Token 刷新相关 ==========
+
+var xyrtLog = logger.GetLogger("xyrt")
+
+// refreshXyrtToken 刷新 xyrt Token
+func (m *TokenManager) refreshXyrtToken(ctx context.Context, account *model.Account) error {
+	if account.XyrtRefreshToken == "" {
+		return fmt.Errorf("no xyrt refresh token available")
+	}
+
+	if account.GatewayURL == "" {
+		return fmt.Errorf("no gateway URL configured for xyrt")
+	}
+
+	// 构建刷新 URL
+	refreshURL := strings.TrimSuffix(account.GatewayURL, "/") + "/auth/refresh"
+
+	// 构建请求体
+	payload := map[string]string{
+		"refresh_token": account.XyrtRefreshToken,
+	}
+	jsonBody, _ := json.Marshal(payload)
+
+	req, err := http.NewRequestWithContext(ctx, "POST", refreshURL, bytes.NewBuffer(jsonBody))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	// xyrt 不使用代理，直接访问网关
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		xyrtLog.Error("[xyrt] Token 刷新失败 | AccountID: %d | 原因: %v", account.ID, err)
+		m.repo.MarkAsTokenExpired(account.ID, fmt.Sprintf("xyrt refresh failed: %v", err))
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := utils.ReadAllWithLimit(resp.Body, utils.MaxResponseBodyBytes)
+		errMsg := fmt.Sprintf("xyrt token refresh failed: HTTP %d - %s", resp.StatusCode, string(body))
+		xyrtLog.Error("[xyrt] Token 刷新失败 | AccountID: %d | %s", account.ID, errMsg)
+		m.repo.MarkAsTokenExpired(account.ID, errMsg)
+		return fmt.Errorf(errMsg)
+	}
+
+	// 解析响应
+	var tokenResp struct {
+		AccessToken      string `json:"accessToken"`
+		AccountCheckInfo struct {
+			TeamIDs  []string `json:"team_ids"`
+			PlanType string   `json:"plan_type"`
+		} `json:"accountCheckInfo"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&tokenResp); err != nil {
+		errMsg := fmt.Sprintf("xyrt response parse failed: %v", err)
+		xyrtLog.Error("[xyrt] Token 刷新失败 | AccountID: %d | %s", account.ID, errMsg)
+		m.repo.MarkAsTokenExpired(account.ID, errMsg)
+		return err
+	}
+
+	// 更新账户
+	now := time.Now()
+	orgID := ""
+	planType := tokenResp.AccountCheckInfo.PlanType
+
+	// 如果是 team 或 k12，设置组织 ID
+	if (planType == "team" || planType == "k12") && len(tokenResp.AccountCheckInfo.TeamIDs) > 0 {
+		orgID = tokenResp.AccountCheckInfo.TeamIDs[0]
+	}
+
+	// 更新数据库
+	if err := m.repo.UpdateXyrtToken(account.ID, tokenResp.AccessToken, orgID, planType, &now); err != nil {
+		xyrtLog.Error("[xyrt] Token 更新失败 | AccountID: %d | 原因: %v", account.ID, err)
+		return err
+	}
+
+	xyrtLog.Info("[xyrt] Token 刷新成功 | AccountID: %d | PlanType: %s | OrgID: %s", account.ID, planType, orgID)
+	return nil
+}
+
+// dailyXyrtRefresh 每日定时刷新 xyrt Token
+func (m *TokenManager) dailyXyrtRefresh() {
+	// 每小时检查一次
+	ticker := time.NewTicker(1 * time.Hour)
+	defer ticker.Stop()
+
+	// 启动时立即检查一次
+	m.refreshExpiredXyrtTokens()
+
+	for range ticker.C {
+		m.refreshExpiredXyrtTokens()
+	}
+}
+
+// refreshExpiredXyrtTokens 刷新超过24小时未刷新的 xyrt Token
+func (m *TokenManager) refreshExpiredXyrtTokens() {
+	accounts, err := m.repo.GetXyrtAccountsNeedingRefresh()
+	if err != nil {
+		xyrtLog.Error("[xyrt] 获取需要刷新的账户失败: %v", err)
+		return
+	}
+
+	if len(accounts) == 0 {
+		return
+	}
+
+	xyrtLog.Info("[xyrt] 开始刷新 %d 个 xyrt 账户", len(accounts))
+
+	ctx := context.Background()
+	for _, account := range accounts {
+		// 检查是否正在刷新
+		m.mu.Lock()
+		if m.refreshing[account.ID] {
+			m.mu.Unlock()
+			continue
+		}
+		m.refreshing[account.ID] = true
+		m.mu.Unlock()
+
+		go func(acc model.Account) {
+			defer func() {
+				m.mu.Lock()
+				delete(m.refreshing, acc.ID)
+				m.mu.Unlock()
+			}()
+			m.refreshXyrtToken(ctx, &acc)
+		}(account)
 	}
 }

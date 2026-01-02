@@ -101,7 +101,10 @@ func (a *OpenAIResponsesAdapter) SendStream(ctx context.Context, account *model.
 	// 构建目标 URL: baseURL + path
 	// 类似 claude-relay: const targetUrl = `${fullAccount.baseApi}${req.path}`
 	baseURL := DefaultOpenAIResponsesBaseURL
-	if account.BaseURL != "" {
+	if account.GatewayURL != "" {
+		baseURL = strings.TrimSuffix(account.GatewayURL, "/") + "/backend-api/codex"
+		log.Debug("OpenAI Responses 使用网关 - GatewayURL: %s", account.GatewayURL)
+	} else if account.BaseURL != "" {
 		baseURL = strings.TrimSuffix(account.BaseURL, "/")
 	}
 
@@ -226,11 +229,15 @@ func (a *OpenAIResponsesAdapter) setRequestHeaders(httpReq *http.Request, accoun
 	httpReq.Header.Set("Accept", "text/event-stream")
 
 	// 认证头：按优先级选择 token
-	// 1. SessionKey - 用于 Cookie/Session 认证
-	// 2. AccessToken - OAuth 流程获取的 access_token
-	// 3. APIKey - 长期有效的 API 密钥
+	// 1. xyrt 授权 - 使用通过网关刷新获得的 AccessToken
+	// 2. SessionKey - 用于 Cookie/Session 认证
+	// 3. AccessToken - OAuth 流程获取的 access_token
+	// 4. APIKey - 长期有效的 API 密钥
 	authToken := ""
-	if account.SessionKey != "" {
+	if account.AuthType == "xyrt" {
+		// xyrt 授权优先使用 AccessToken（由 xyrt 刷新获得）
+		authToken = account.AccessToken
+	} else if account.SessionKey != "" {
 		authToken = account.SessionKey
 	} else if account.AccessToken != "" {
 		authToken = account.AccessToken
@@ -272,10 +279,10 @@ func (a *OpenAIResponsesAdapter) setRequestHeaders(httpReq *http.Request, accoun
 		httpReq.Header.Set("User-Agent", "OpenAI-Responses-Proxy/1.0")
 	}
 
-	// 如果是 chatgpt.com 的请求，添加特定头部
-	if strings.Contains(httpReq.URL.Host, "chatgpt.com") {
+	// 如果是 chatgpt.com 或网关请求，添加特定头部
+	if strings.Contains(httpReq.URL.Host, "chatgpt.com") || account.GatewayURL != "" || account.AuthType == "xyrt" {
 		httpReq.Header.Set("openai-beta", "responses=experimental")
-		// ChatGPT Account ID (如果账户有配置)
+		// ChatGPT Account ID (如果账户有配置，适用于 Team/K12 账户)
 		if account.OrganizationID != "" {
 			httpReq.Header.Set("chatgpt-account-id", account.OrganizationID)
 		}

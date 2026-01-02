@@ -328,10 +328,14 @@ func (s *UsageSyncService) FetchOpenAICodexUsage(accountID uint) (*repository.Op
 	}
 
 	baseURL := account.BaseURL
-	if baseURL == "" {
-		baseURL = "https://chatgpt.com/backend-api/codex"
+	if account.GatewayURL != "" {
+		baseURL = strings.TrimSuffix(account.GatewayURL, "/") + "/backend-api/codex"
+	} else {
+		if baseURL == "" {
+			baseURL = "https://chatgpt.com/backend-api/codex"
+		}
+		baseURL = strings.TrimSuffix(baseURL, "/")
 	}
-	baseURL = strings.TrimSuffix(baseURL, "/")
 	targetURL := baseURL + "/responses"
 
 	// 构建最小请求

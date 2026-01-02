@@ -196,6 +196,27 @@
                         </svg>
                       </div>
                     </div>
+                    <!-- xyrt 网关授权 -->
+                    <div
+                      class="type-card"
+                      :class="{ selected: form.addType === 'xyrt' }"
+                      @click="form.addType = 'xyrt'"
+                    >
+                      <div class="type-icon xyrt">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                        </svg>
+                      </div>
+                      <div class="type-content">
+                        <h5>xyrt 授权</h5>
+                        <p>使用 xyhelper 的 refresh_token 通过网关认证</p>
+                      </div>
+                      <div v-if="form.addType === 'xyrt'" class="check-badge small">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                      </div>
+                    </div>
                   </template>
 
                   <!-- Gemini 平台 -->
@@ -435,7 +456,15 @@
                     </div>
                     <div class="form-group full">
                       <label class="form-label">组织 ID（可选）</label>
-                      <input v-model="form.organization_id" type="text" class="form-input" placeholder="org-..." />
+                      <input v-model="form.organization_id" type="text" class="form-input" placeholder="API: org-xxx / Team: 其他格式" />
+                      <p class="form-tip">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <circle cx="12" cy="12" r="10"/>
+                          <line x1="12" y1="16" x2="12" y2="12"/>
+                          <line x1="12" y1="8" x2="12.01" y2="8"/>
+                        </svg>
+                        API 账户以 org- 开头；Team/Enterprise 账户为其他格式
+                      </p>
                     </div>
                     <div class="form-group full">
                       <label class="form-label">API Base URL（可选）</label>
@@ -501,6 +530,87 @@
                       <li>复制 <strong>Bearer</strong> 后面的完整 token</li>
                     </ol>
                     <p class="help-note">SessionKey 通常以 <code>eyJhbGciOiJSUzI1NiI</code> 开头，有效期约 7 天</p>
+                  </div>
+                </template>
+
+                <!-- ChatGPT 官方 xyrt 网关授权配置 -->
+                <template v-if="form.type === 'openai-responses' && form.addType === 'xyrt'">
+                  <div class="form-grid">
+                    <div class="form-group full">
+                      <label class="form-label required">
+                        <svg class="label-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <circle cx="12" cy="12" r="10"/>
+                          <line x1="2" y1="12" x2="22" y2="12"/>
+                          <path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/>
+                        </svg>
+                        网关地址 (Gateway URL)
+                      </label>
+                      <input
+                        v-model="form.gateway_url"
+                        type="text"
+                        class="form-input"
+                        placeholder="例如：https://your-gateway.example.com"
+                      />
+                      <p class="form-tip">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <circle cx="12" cy="12" r="10"/>
+                          <line x1="12" y1="16" x2="12" y2="12"/>
+                          <line x1="12" y1="8" x2="12.01" y2="8"/>
+                        </svg>
+                        网关用于替换 chatgpt.com，请求将发送到 网关/backend-api/codex
+                      </p>
+                    </div>
+                    <div class="form-group full">
+                      <label class="form-label required">
+                        <svg class="label-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4"/>
+                        </svg>
+                        xyhelper Refresh Token
+                      </label>
+                      <div class="input-with-toggle">
+                        <input
+                          v-model="form.xyrt_refresh_token"
+                          :type="showXyrtToken ? 'text' : 'password'"
+                          class="form-input"
+                          placeholder="xyhelpertoken..."
+                        />
+                        <button type="button" class="toggle-visibility" @click="showXyrtToken = !showXyrtToken">
+                          <svg v-if="showXyrtToken" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/>
+                            <line x1="1" y1="1" x2="23" y2="23"/>
+                          </svg>
+                          <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                          </svg>
+                        </button>
+                      </div>
+                      <p class="form-tip">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <circle cx="12" cy="12" r="10"/>
+                          <line x1="12" y1="16" x2="12" y2="12"/>
+                          <line x1="12" y1="8" x2="12.01" y2="8"/>
+                        </svg>
+                        xyhelper 提供的 refresh_token，以 <code>xyhelpertoken</code> 开头
+                      </p>
+                    </div>
+                  </div>
+                  <div class="help-card">
+                    <div class="help-header">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="16" x2="12" y2="12"/>
+                        <line x1="12" y1="8" x2="12.01" y2="8"/>
+                      </svg>
+                      <span>xyrt 授权说明</span>
+                    </div>
+                    <ol class="help-steps">
+                      <li>从 xyhelper 服务获取 refresh_token</li>
+                      <li>配置网关地址（用于替换 chatgpt.com 域名）</li>
+                      <li>系统每天自动刷新 AccessToken</li>
+                      <li>Team/K12 账户会自动获取组织 ID</li>
+                    </ol>
+                    <p class="help-note">xyrt refresh_token 以 <code>xyhelpertoken</code> 开头</p>
                   </div>
                 </template>
 
@@ -853,7 +963,15 @@
                   </div>
                   <div class="form-group full">
                     <label class="form-label">Organization ID（可选）</label>
-                    <input v-model="form.organization_id" type="text" class="form-input" placeholder="org-..." />
+                    <input v-model="form.organization_id" type="text" class="form-input" placeholder="Team/Plus 账户所需的组织 ID" />
+                    <p class="form-tip">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="16" x2="12" y2="12"/>
+                        <line x1="12" y1="8" x2="12.01" y2="8"/>
+                      </svg>
+                      Team 账户必填；从 ChatGPT 请求头获取（不是 org- 格式）
+                    </p>
                   </div>
                 </div>
               </div>
@@ -1018,6 +1136,7 @@ const platformGroup = ref('')
 const showApiKey = ref(false)
 const showAwsSecret = ref(false)
 const showSessionKey = ref(false)
+const showXyrtToken = ref(false)
 const modelInputRef = ref(null)
 const modelInputValue = ref('')
 
@@ -1141,7 +1260,11 @@ const defaultForm = {
   allowedModelsList: [],
   model_mapping: '',
   selectedMappingIds: [],
-  proxy_id: null
+  proxy_id: null,
+  // xyrt 授权相关
+  gateway_url: '',
+  xyrt_refresh_token: '',
+  auth_type: ''
 }
 
 const form = reactive({ ...defaultForm })
@@ -1157,7 +1280,7 @@ const showPlatformConfig = computed(() => {
   const type = form.type
   if (['claude-console', 'bedrock', 'azure-openai'].includes(type)) return true
   if ((type === 'openai' || type === 'gemini') && form.addType === 'apikey') return true
-  if (type === 'openai-responses' && form.addType === 'cookie') return true
+  if (type === 'openai-responses' && (form.addType === 'cookie' || form.addType === 'xyrt')) return true
   return false
 })
 
@@ -1195,10 +1318,23 @@ const canProceed = computed(() => {
   return true
 })
 
+function mapAuthTypeToAddType(authType) {
+  if (authType === 'xyrt') return 'xyrt'
+  if (authType === 'cookie') return 'cookie'
+  if (authType === 'oauth') return 'oauth'
+  return ''
+}
+
 // 监听编辑数据变化
 watch(() => props.editData, (val) => {
   if (val) {
     Object.assign(form, { ...defaultForm, ...val })
+    if (val.type === 'openai-responses') {
+      const mapped = mapAuthTypeToAddType(val.auth_type)
+      if (mapped) {
+        form.addType = mapped
+      }
+    }
     if (val.base_url) {
       form.api_url = val.base_url
     }
@@ -1273,7 +1409,12 @@ watch(() => form.type, (newType) => {
   if (newType === 'claude-official') {
     form.addType = 'cookie'
   } else if (newType === 'openai-responses') {
-    form.addType = 'oauth'
+    if (isEdit.value && form.auth_type) {
+      const mapped = mapAuthTypeToAddType(form.auth_type)
+      form.addType = mapped || 'oauth'
+    } else {
+      form.addType = 'oauth'
+    }
   } else if (['claude-console', 'bedrock', 'azure-openai'].includes(newType)) {
     form.addType = 'apikey'
   } else if (['openai', 'gemini'].includes(newType)) {
@@ -1423,6 +1564,17 @@ function buildSubmitData() {
   if (form.refresh_token) data.refresh_token = form.refresh_token
   if (form.session_key) data.session_key = form.session_key
   if (form.organization_id) data.organization_id = form.organization_id
+
+  // xyrt 授权相关字段
+  if (form.addType === 'xyrt') {
+    data.auth_type = 'xyrt'
+    if (form.gateway_url) data.gateway_url = form.gateway_url
+    if (form.xyrt_refresh_token) data.xyrt_refresh_token = form.xyrt_refresh_token
+  } else if (form.addType === 'oauth') {
+    data.auth_type = 'oauth'
+  } else if (form.addType === 'cookie') {
+    data.auth_type = 'cookie'
+  }
 
   if (form.type === 'bedrock') {
     data.aws_access_key = form.aws_access_key_id
@@ -1893,6 +2045,10 @@ function getTypeColor(type) {
 
 .type-icon.apikey {
   background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.type-icon.xyrt {
+  background: linear-gradient(135deg, #f5af19 0%, #f12711 100%);
 }
 
 .type-icon svg {

@@ -116,6 +116,7 @@ export default {
   deleteModel: (id) => Delete(`/admin/models-config/${id}`),
   toggleModel: (id) => Put(`/admin/models-config/${id}/toggle`),
   getModelPlatforms: () => Get('/admin/models-config/platforms'),
+  resetModels: () => Post('/admin/models-config/reset-defaults'),
 
   // Admin - API Keys
   adminGetAllAPIKeys: (params) => Get('/admin/api-keys', { params }),

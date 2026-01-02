@@ -938,11 +938,15 @@ func (s *AccountHealthCheckService) checkOpenAIResponses(ctx context.Context, ac
 // checkChatGPTOAuth 检查 ChatGPT OAuth Token
 // 通过调用 ChatGPT backend-api 来验证 token 有效性
 func (s *AccountHealthCheckService) checkChatGPTOAuth(ctx context.Context, account *model.Account, token string) (bool, string) {
-	client := adapter.GetSmartHTTPClient(account, "https://chatgpt.com")
+	baseURL := "https://chatgpt.com"
+	if account.GatewayURL != "" {
+		baseURL = strings.TrimSuffix(account.GatewayURL, "/")
+	}
+	client := adapter.GetSmartHTTPClient(account, baseURL)
 
 	// ChatGPT 账户信息检查 API
-	req, err := http.NewRequestWithContext(ctx, "GET",
-		"https://chatgpt.com/backend-api/accounts/check/v4-2023-04-27", nil)
+	reqURL := baseURL + "/backend-api/accounts/check/v4-2023-04-27"
+	req, err := http.NewRequestWithContext(ctx, "GET", reqURL, nil)
 	if err != nil {
 		return false, fmt.Sprintf("创建请求失败: %v", err)
 	}

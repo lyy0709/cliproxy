@@ -282,6 +282,11 @@ func GetEffectiveProxy(account *model.Account) string {
 		return ""
 	}
 
+	// xyrt 或配置了网关时强制直连，忽略代理
+	if account.AuthType == "xyrt" || account.GatewayURL != "" {
+		return ""
+	}
+
 	// 检查账户是否关联了代理
 	if account.Proxy != nil && account.Proxy.Enabled {
 		return account.Proxy.GetURL()

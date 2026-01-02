@@ -455,6 +455,13 @@ func (r *AccountRepository) EncryptExistingSecrets() error {
 				return err
 			}
 		}
+		if acc.XyrtRefreshToken != "" && !utils.IsEncrypted(acc.XyrtRefreshToken) {
+			if v, err := utils.EncryptString(acc.XyrtRefreshToken); err == nil {
+				updates["xyrt_refresh_token"] = v
+			} else {
+				return err
+			}
+		}
 
 		if len(updates) > 0 {
 			if err := r.db.Model(&model.Account{}).Where("id = ?", acc.ID).Updates(updates).Error; err != nil {
@@ -732,4 +739,33 @@ func (r *AccountRepository) RecoverAccount(id uint) error {
 // ForceRecoverAccount 强制恢复账号（不检测，直接恢复）
 func (r *AccountRepository) ForceRecoverAccount(id uint) error {
 	return r.RecoverAccount(id)
+}
+
+// ========== xyrt Token 相关方法 ==========
+
+// UpdateXyrtToken 更新 xyrt Token 相关字段
+func (r *AccountRepository) UpdateXyrtToken(id uint, accessToken, orgID, planType string, refreshedAt *time.Time) error {
+	encryptedAccess, err := utils.EncryptString(accessToken)
+	if err != nil {
+		return err
+	}
+	updates := map[string]interface{}{
+		"access_token":         encryptedAccess,
+		"organization_id":      orgID,
+		"plan_type":            planType,
+		"last_xyrt_refresh_at": refreshedAt,
+		// 刷新成功后恢复为有效状态
+		"status": model.AccountStatusValid,
+	}
+	return r.db.Model(&model.Account{}).Where("id = ?", id).Updates(updates).Error
+}
+
+// GetXyrtAccountsNeedingRefresh 获取需要 xyrt 刷新的账户（超过24小时未刷新或从未刷新）
+func (r *AccountRepository) GetXyrtAccountsNeedingRefresh() ([]model.Account, error) {
+	var accounts []model.Account
+	oneDayAgo := time.Now().Add(-24 * time.Hour)
+	err := r.db.Where("type = ? AND enabled = ? AND auth_type = ? AND (last_xyrt_refresh_at IS NULL OR last_xyrt_refresh_at < ?)",
+		model.AccountTypeOpenAIResponses, true, "xyrt", oneDayAgo).
+		Find(&accounts).Error
+	return accounts, err
 }

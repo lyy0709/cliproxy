@@ -209,10 +209,14 @@ func (h *OpenAIResponsesHandler) HandleResponses(c *gin.Context) {
 	// 构建目标 URL: baseURL + path
 	// 参考 claude-relay: const targetUrl = `${fullAccount.baseApi}${req.path}`
 	baseURL := account.BaseURL
-	if baseURL == "" {
-		baseURL = "https://chatgpt.com/backend-api/codex"
+	if account.GatewayURL != "" {
+		baseURL = strings.TrimSuffix(account.GatewayURL, "/") + "/backend-api/codex"
+	} else {
+		if baseURL == "" {
+			baseURL = "https://chatgpt.com/backend-api/codex"
+		}
+		baseURL = strings.TrimSuffix(baseURL, "/")
 	}
-	baseURL = strings.TrimSuffix(baseURL, "/")
 
 	// 处理平台前缀路由：去掉 /openai 前缀
 	forwardPath := requestPath
@@ -249,8 +253,14 @@ func (h *OpenAIResponsesHandler) HandleResponses(c *gin.Context) {
 	}
 	defer resp.Body.Close()
 
-	// 401/403 时尝试刷新 OpenAI OAuth Token 后重试一次
-	if (resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden) && account.RefreshToken != "" {
+	// 401/403 时尝试刷新 Token 后重试一次
+	shouldRefresh := false
+	if account.AuthType == "xyrt" && account.XyrtRefreshToken != "" {
+		shouldRefresh = true
+	} else if account.RefreshToken != "" {
+		shouldRefresh = true
+	}
+	if (resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden) && shouldRefresh {
 		if err := scheduler.GetTokenManager().ForceRefresh(ctx, account.ID); err == nil {
 			refreshedAccount, refreshErr := repository.NewAccountRepository().GetByID(account.ID)
 			if refreshErr == nil {
@@ -310,9 +320,11 @@ func (h *OpenAIResponsesHandler) setRequestHeaders(httpReq *http.Request, c *gin
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set("Accept", "text/event-stream")
 
-	// 认证令牌优先级: SessionKey > AccessToken > APIKey
+	// 认证令牌优先级: xyrt AccessToken > SessionKey > AccessToken > APIKey
 	authToken := ""
-	if account.SessionKey != "" {
+	if account.AuthType == "xyrt" {
+		authToken = account.AccessToken
+	} else if account.SessionKey != "" {
 		authToken = account.SessionKey
 	} else if account.AccessToken != "" {
 		authToken = account.AccessToken
@@ -338,8 +350,8 @@ func (h *OpenAIResponsesHandler) setRequestHeaders(httpReq *http.Request, c *gin
 		httpReq.Header.Set("openai-beta", beta)
 	}
 
-	// 如果是 chatgpt.com 请求，添加特定头部
-	if strings.Contains(httpReq.URL.Host, "chatgpt.com") {
+	// 如果是 chatgpt.com 或网关请求，添加特定头部
+	if strings.Contains(httpReq.URL.Host, "chatgpt.com") || account.GatewayURL != "" {
 		httpReq.Header.Set("openai-beta", "responses=experimental")
 		if account.OrganizationID != "" {
 			httpReq.Header.Set("chatgpt-account-id", account.OrganizationID)
