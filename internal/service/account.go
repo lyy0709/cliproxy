@@ -220,8 +220,20 @@ func (s *AccountService) Create(req *CreateAccountRequest) (*model.Account, erro
 	scheduler.GetScheduler().Refresh()
 
 	// 如果是 xyrt 类型，立即触发一次 token 刷新
-	if account.Type == model.AccountTypeOpenAIResponses && account.AuthType == "xyrt" && account.XyrtRefreshToken != "" {
-		go func(acc *model.Account) {
+	// 注意：需要重新从数据库获取账户，因为 BeforeSave 钩子会加密 XyrtRefreshToken
+	// 而 AfterFind 钩子会解密，这样才能获取正确的明文 token
+	if account.Type == model.AccountTypeOpenAIResponses && account.AuthType == "xyrt" {
+		go func(accountID uint) {
+			// 重新从数据库读取账户，确保 XyrtRefreshToken 是解密后的明文
+			acc, err := s.repo.GetByID(accountID)
+			if err != nil {
+				getAccountLog().Warn("[account] xyrt 账户创建后获取账户失败 | AccountID: %d | 原因: %v", accountID, err)
+				return
+			}
+			if acc.XyrtRefreshToken == "" {
+				getAccountLog().Warn("[account] xyrt 账户创建后 refresh token 为空 | AccountID: %d", accountID)
+				return
+			}
 			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 			defer cancel()
 			if err := scheduler.GetTokenManager().RefreshXyrtToken(ctx, acc); err != nil {
@@ -229,7 +241,7 @@ func (s *AccountService) Create(req *CreateAccountRequest) (*model.Account, erro
 			} else {
 				getAccountLog().Info("[account] xyrt 账户创建后自动刷新成功 | AccountID: %d", acc.ID)
 			}
-		}(account)
+		}(account.ID)
 	}
 
 	getAccountLog().Info("[account] 创建账户成功 | AccountID: %d | Name: %s | Type: %s", account.ID, account.Name, account.Type)
@@ -380,9 +392,16 @@ func (s *AccountService) Update(id uint, req *UpdateAccountRequest) (*model.Acco
 
 	// 只有当提供了新的 xyrt refresh token 时才触发刷新
 	// 如果只是编辑其他字段（名称、网关等），不应该触发刷新
-	if account.Type == model.AccountTypeOpenAIResponses && account.AuthType == "xyrt" && account.XyrtRefreshToken != "" {
+	// 注意：需要重新从数据库获取账户，因为 BeforeSave 钩子会加密 XyrtRefreshToken
+	if account.Type == model.AccountTypeOpenAIResponses && account.AuthType == "xyrt" {
 		if req.XyrtRefreshToken != "" {
-			go func(acc *model.Account) {
+			go func(accountID uint) {
+				// 重新从数据库读取账户，确保 XyrtRefreshToken 是解密后的明文
+				acc, err := s.repo.GetByID(accountID)
+				if err != nil {
+					getAccountLog().Warn("[account] xyrt 账户更新后获取账户失败 | AccountID: %d | 原因: %v", accountID, err)
+					return
+				}
 				ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 				defer cancel()
 				if err := scheduler.GetTokenManager().RefreshXyrtToken(ctx, acc); err != nil {
@@ -390,7 +409,7 @@ func (s *AccountService) Update(id uint, req *UpdateAccountRequest) (*model.Acco
 				} else {
 					getAccountLog().Info("[account] xyrt 账户更新后自动刷新成功 | AccountID: %d", acc.ID)
 				}
-			}(account)
+			}(account.ID)
 		}
 	}
 
