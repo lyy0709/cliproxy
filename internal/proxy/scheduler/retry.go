@@ -948,8 +948,14 @@ func (r *RetryableRequest) isRetryable(err error) bool {
 	return false
 }
 
-// isConnectionError 判断是否是连接错误（流式请求开始前的错误）
+// isConnectionError 判断是否是连接错误或可重试的上游错误（流式请求开始前的错误）
 // 也包括 SSE 首个事件就是错误的情况（此时尚未向客户端写入数据）
+// 注意：此方法用于流式请求，在连接阶段遇到的错误应该和非流式请求一样可以重试
+//
+// 支持的平台错误格式：
+// - Claude/Anthropic: {"type":"error","error":{"type":"overloaded_error","message":"..."}}
+// - OpenAI/ChatGPT: {"error":{"code":"429","message":"...","type":"rate_limit_exceeded"}}
+// - Gemini: {"error":{"code":429,"status":"RESOURCE_EXHAUSTED","message":"..."}}
 func (r *RetryableRequest) isConnectionError(err error) bool {
 	if err == nil {
 		return false
@@ -957,7 +963,7 @@ func (r *RetryableRequest) isConnectionError(err error) bool {
 
 	errStr := strings.ToLower(err.Error())
 
-	// 连接错误
+	// 1. 网络/连接错误
 	connectionErrors := []string{
 		"connection refused",
 		"connection reset",
@@ -965,6 +971,11 @@ func (r *RetryableRequest) isConnectionError(err error) bool {
 		"timeout",
 		"dial",
 		"network",
+		"eof",
+		"broken pipe",
+		"i/o timeout",
+		"tls handshake",
+		"certificate",
 	}
 
 	for _, connErr := range connectionErrors {
@@ -973,17 +984,120 @@ func (r *RetryableRequest) isConnectionError(err error) bool {
 		}
 	}
 
-	// SSE 首个事件为错误（尚未向客户端写入数据，可安全重试）
-	sseRetryableErrors := []string{
-		"permission_error",
-		"authentication_error",
-		"overloaded_error",
-		"rate_limit_error",
-		"api_error",
+	// 2. HTTP 状态码（各平台通用）
+	// 这些状态码通常表示临时性问题或账号问题，切换账号可能解决
+	httpRetryableCodes := []string{
+		"400", // Bad Request (某些格式错误可能是账号配置问题)
+		"401", // Unauthorized (认证失败，切换账号)
+		"403", // Forbidden (权限问题，切换账号)
+		"404", // Not Found (资源不存在，可能是账号配置问题)
+		"413", // Request Too Large
+		"429", // Too Many Requests / Rate Limit
+		"500", // Internal Server Error
+		"502", // Bad Gateway
+		"503", // Service Unavailable
+		"504", // Gateway Timeout
+		"529", // Site is overloaded (Claude 特有)
 	}
 
-	for _, sseErr := range sseRetryableErrors {
-		if strings.Contains(errStr, sseErr) {
+	for _, code := range httpRetryableCodes {
+		// 匹配 [HTTP 429] 或 "code": 429 或 statuscode: 429 等格式
+		if strings.Contains(errStr, code) {
+			return true
+		}
+	}
+
+	// 3. Claude/Anthropic 错误类型
+	// 参考: https://docs.anthropic.com/claude/reference/errors
+	claudeErrorTypes := []string{
+		"invalid_request_error", // 400
+		"authentication_error",  // 401
+		"permission_error",      // 403
+		"not_found_error",       // 404
+		"request_too_large",     // 413
+		"rate_limit_error",      // 429
+		"api_error",             // 500
+		"overloaded_error",      // 529
+	}
+
+	for _, errType := range claudeErrorTypes {
+		if strings.Contains(errStr, errType) {
+			return true
+		}
+	}
+
+	// 4. OpenAI/ChatGPT 错误类型
+	// 参考: https://platform.openai.com/docs/guides/error-codes
+	openaiErrorTypes := []string{
+		"invalid_api_key",
+		"rate_limit_exceeded",
+		"insufficient_quota",
+		"usage_limit_reached", // ChatGPT Team/Plus 用量限制
+		"server_error",
+		"service_unavailable",
+		"internal_server_error",
+		"billing_hard_limit_reached",
+		"context_length_exceeded",
+		"model_not_found",
+	}
+
+	for _, errType := range openaiErrorTypes {
+		if strings.Contains(errStr, errType) {
+			return true
+		}
+	}
+
+	// 5. Gemini 错误类型
+	// 参考: https://ai.google.dev/gemini-api/docs/troubleshooting
+	geminiErrorTypes := []string{
+		"resource_exhausted",
+		"ratelimitexceeded",
+		"permission_denied",
+		"invalid_argument",
+		"failed_precondition",
+		"not_found",
+		"internal",
+		"unavailable",
+		"deadline_exceeded",
+	}
+
+	for _, errType := range geminiErrorTypes {
+		if strings.Contains(errStr, errType) {
+			return true
+		}
+	}
+
+	// 6. 通用限流/配额相关关键词
+	rateLimitKeywords := []string{
+		"rate_limit",
+		"rate limit",
+		"ratelimit",
+		"usage_limit",
+		"usage limit",
+		"quota",
+		"overloaded",
+		"capacity",
+		"too many requests",
+		"request limit",
+		"exceeded",
+		"throttl",
+		"limit reached",
+		"try again",
+		"retry after",
+		"temporarily unavailable",
+		"service overloaded",
+		"high traffic",
+		"resets_at",       // ChatGPT 限流响应字段
+		"resets_in",       // ChatGPT 限流响应字段
+		"plan_type",       // ChatGPT 限流响应字段
+		"billing",         // 账单相关
+		"credits",         // 额度相关
+		"token limit",     // Token 限制
+		"context length",  // 上下文长度限制
+	}
+
+	for _, keyword := range rateLimitKeywords {
+		if strings.Contains(errStr, keyword) {
 			return true
 		}
 	}
