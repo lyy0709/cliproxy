@@ -319,7 +319,10 @@ func (m *TokenManager) ForceRefresh(ctx context.Context, accountID uint) error {
 
 // ========== xyrt Token 刷新相关 ==========
 
-var xyrtLog = logger.GetLogger("xyrt")
+// getXyrtLog 懒加载获取 xyrt 日志器（避免包初始化顺序问题）
+func getXyrtLog() *logger.Logger {
+	return logger.GetLogger("xyrt")
+}
 
 // refreshXyrtToken 刷新 xyrt Token
 func (m *TokenManager) refreshXyrtToken(ctx context.Context, account *model.Account) error {
@@ -350,7 +353,7 @@ func (m *TokenManager) refreshXyrtToken(ctx context.Context, account *model.Acco
 	client := &http.Client{Timeout: 30 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
-		xyrtLog.Error("[xyrt] Token 刷新失败 | AccountID: %d | 原因: %v", account.ID, err)
+		getXyrtLog().Error("[xyrt] Token 刷新失败 | AccountID: %d | 原因: %v", account.ID, err)
 		m.repo.MarkAsTokenExpired(account.ID, fmt.Sprintf("xyrt refresh failed: %v", err))
 		return err
 	}
@@ -359,7 +362,7 @@ func (m *TokenManager) refreshXyrtToken(ctx context.Context, account *model.Acco
 	if resp.StatusCode != http.StatusOK {
 		body, _ := utils.ReadAllWithLimit(resp.Body, utils.MaxResponseBodyBytes)
 		errMsg := fmt.Sprintf("xyrt token refresh failed: HTTP %d - %s", resp.StatusCode, string(body))
-		xyrtLog.Error("[xyrt] Token 刷新失败 | AccountID: %d | %s", account.ID, errMsg)
+		getXyrtLog().Error("[xyrt] Token 刷新失败 | AccountID: %d | %s", account.ID, errMsg)
 		m.repo.MarkAsTokenExpired(account.ID, errMsg)
 		return fmt.Errorf(errMsg)
 	}
@@ -375,7 +378,7 @@ func (m *TokenManager) refreshXyrtToken(ctx context.Context, account *model.Acco
 
 	if err := json.NewDecoder(resp.Body).Decode(&tokenResp); err != nil {
 		errMsg := fmt.Sprintf("xyrt response parse failed: %v", err)
-		xyrtLog.Error("[xyrt] Token 刷新失败 | AccountID: %d | %s", account.ID, errMsg)
+		getXyrtLog().Error("[xyrt] Token 刷新失败 | AccountID: %d | %s", account.ID, errMsg)
 		m.repo.MarkAsTokenExpired(account.ID, errMsg)
 		return err
 	}
@@ -392,11 +395,11 @@ func (m *TokenManager) refreshXyrtToken(ctx context.Context, account *model.Acco
 
 	// 更新数据库
 	if err := m.repo.UpdateXyrtToken(account.ID, tokenResp.AccessToken, orgID, planType, &now); err != nil {
-		xyrtLog.Error("[xyrt] Token 更新失败 | AccountID: %d | 原因: %v", account.ID, err)
+		getXyrtLog().Error("[xyrt] Token 更新失败 | AccountID: %d | 原因: %v", account.ID, err)
 		return err
 	}
 
-	xyrtLog.Info("[xyrt] Token 刷新成功 | AccountID: %d | PlanType: %s | OrgID: %s", account.ID, planType, orgID)
+	getXyrtLog().Info("[xyrt] Token 刷新成功 | AccountID: %d | PlanType: %s | OrgID: %s", account.ID, planType, orgID)
 	return nil
 }
 
@@ -418,7 +421,7 @@ func (m *TokenManager) dailyXyrtRefresh() {
 func (m *TokenManager) refreshExpiredXyrtTokens() {
 	accounts, err := m.repo.GetXyrtAccountsNeedingRefresh()
 	if err != nil {
-		xyrtLog.Error("[xyrt] 获取需要刷新的账户失败: %v", err)
+		getXyrtLog().Error("[xyrt] 获取需要刷新的账户失败: %v", err)
 		return
 	}
 
@@ -426,7 +429,7 @@ func (m *TokenManager) refreshExpiredXyrtTokens() {
 		return
 	}
 
-	xyrtLog.Info("[xyrt] 开始刷新 %d 个 xyrt 账户", len(accounts))
+	getXyrtLog().Info("[xyrt] 开始刷新 %d 个 xyrt 账户", len(accounts))
 
 	ctx := context.Background()
 	for _, account := range accounts {
