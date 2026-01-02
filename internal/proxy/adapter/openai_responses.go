@@ -133,50 +133,31 @@ func (a *OpenAIResponsesAdapter) SendStream(ctx context.Context, account *model.
 		// 解析原始请求体
 		var rawReq map[string]interface{}
 		if err := json.Unmarshal(req.RawBody, &rawReq); err == nil {
-			// 判断是否是 Codex API（OAuth/SessionKey/xyrt 认证方式使用 Codex）
-			// API Key 认证使用标准 OpenAI API
-			isCodexAPI := account.APIKey == ""
+			// ChatGPT Codex API 要求 store 必须为 false
+			rawReq["store"] = false
 
-			if isCodexAPI {
-				// === Codex API 模式 ===
-				// ChatGPT Codex API 要求 store 必须为 false
-				rawReq["store"] = false
-
-				// 如果客户端发送的是 messages 格式，转换为 input 格式
-				if messages, hasMessages := rawReq["messages"]; hasMessages {
-					if _, hasInput := rawReq["input"]; !hasInput {
-						input := a.convertMessagesToInput(messages)
-						if len(input) > 0 {
-							rawReq["input"] = input
-							delete(rawReq, "messages")
-							log.Debug("OpenAI Responses (Codex): 已转换 messages 为 input 格式")
-						}
-					}
-				}
-			} else {
-				// === 标准 OpenAI API 模式 ===
-				// 如果客户端发送的是 input 格式，转换为 messages 格式
-				if input, hasInput := rawReq["input"]; hasInput {
-					if _, hasMessages := rawReq["messages"]; !hasMessages {
-						messages := a.convertInputToMessages(input)
-						if len(messages) > 0 {
-							rawReq["messages"] = messages
-							delete(rawReq, "input")
-							// 同时处理 instructions 字段
-							if instructions, ok := rawReq["instructions"].(string); ok && instructions != "" {
-								systemMsg := map[string]interface{}{
-									"role":    "system",
-									"content": instructions,
-								}
-								rawReq["messages"] = append([]interface{}{systemMsg}, messages...)
-								delete(rawReq, "instructions")
+			// 检查是否需要转换格式（如果有 input 但没有 messages，转换为 messages 格式）
+			if input, hasInput := rawReq["input"]; hasInput {
+				if _, hasMessages := rawReq["messages"]; !hasMessages {
+					// 转换 input 为 messages 格式（标准 OpenAI）
+					messages := a.convertInputToMessages(input)
+					if len(messages) > 0 {
+						rawReq["messages"] = messages
+						delete(rawReq, "input")
+						// 同时处理 instructions 字段
+						if instructions, ok := rawReq["instructions"].(string); ok && instructions != "" {
+							// 将 instructions 作为 system message 添加到开头
+							systemMsg := map[string]interface{}{
+								"role":    "system",
+								"content": instructions,
 							}
-							log.Debug("OpenAI Responses (API): 已转换 input 为 messages 格式")
+							rawReq["messages"] = append([]interface{}{systemMsg}, messages...)
+							delete(rawReq, "instructions")
 						}
+						log.Debug("OpenAI Responses: 已转换 input 为 messages 格式")
 					}
 				}
 			}
-
 			body, err = json.Marshal(rawReq)
 			if err != nil {
 				return nil, fmt.Errorf("marshal request: %w", err)
@@ -528,31 +509,6 @@ func (a *OpenAIResponsesAdapter) convertRequest(req *Request) *OpenAIResponsesRe
 	}
 
 	return openaiReq
-}
-
-// convertMessagesToInput 将标准 OpenAI messages 格式转换为 Responses API 的 input 格式
-func (a *OpenAIResponsesAdapter) convertMessagesToInput(messages interface{}) []map[string]interface{} {
-	var input []map[string]interface{}
-
-	msgList, ok := messages.([]interface{})
-	if !ok {
-		return input
-	}
-
-	for _, item := range msgList {
-		if itemMap, ok := item.(map[string]interface{}); ok {
-			role, _ := itemMap["role"].(string)
-			content := itemMap["content"]
-
-			inputItem := map[string]interface{}{
-				"role":    role,
-				"content": content,
-			}
-			input = append(input, inputItem)
-		}
-	}
-
-	return input
 }
 
 // convertInputToMessages 将 Responses API 的 input 格式转换为标准 OpenAI messages 格式
