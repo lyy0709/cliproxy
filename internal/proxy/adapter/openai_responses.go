@@ -133,6 +133,9 @@ func (a *OpenAIResponsesAdapter) SendStream(ctx context.Context, account *model.
 		// 解析原始请求体
 		var rawReq map[string]interface{}
 		if err := json.Unmarshal(req.RawBody, &rawReq); err == nil {
+			// ChatGPT Codex API 要求 store 必须为 false
+			rawReq["store"] = false
+
 			// 检查是否需要转换格式（如果有 input 但没有 messages，转换为 messages 格式）
 			if input, hasInput := rawReq["input"]; hasInput {
 				if _, hasMessages := rawReq["messages"]; !hasMessages {
