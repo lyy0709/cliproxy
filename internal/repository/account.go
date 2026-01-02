@@ -241,6 +241,68 @@ func (r *AccountRepository) UpdateClaudeUsage(id uint, usage *ClaudeUsageData) e
 	return r.db.Model(&model.Account{}).Where("id = ?", id).Updates(updates).Error
 }
 
+// UpdateCodexUsage 更新 OpenAI Codex 用量数据
+func (r *AccountRepository) UpdateCodexUsage(id uint, usage *OpenAICodexUsageResponse) error {
+	now := time.Now()
+	updates := map[string]interface{}{
+		"codex_usage_updated_at": now,
+	}
+
+	if usage.PrimaryUsedPercent != nil {
+		updates["codex_primary_used_percent"] = *usage.PrimaryUsedPercent
+	}
+	if usage.PrimaryResetAfterSeconds != nil {
+		updates["codex_primary_reset_after_seconds"] = *usage.PrimaryResetAfterSeconds
+	}
+	if usage.PrimaryWindowMinutes != nil {
+		updates["codex_primary_window_minutes"] = *usage.PrimaryWindowMinutes
+	}
+	if usage.SecondaryUsedPercent != nil {
+		updates["codex_secondary_used_percent"] = *usage.SecondaryUsedPercent
+	}
+	if usage.SecondaryResetAfterSeconds != nil {
+		updates["codex_secondary_reset_after_seconds"] = *usage.SecondaryResetAfterSeconds
+	}
+	if usage.SecondaryWindowMinutes != nil {
+		updates["codex_secondary_window_minutes"] = *usage.SecondaryWindowMinutes
+	}
+
+	return r.db.Model(&model.Account{}).Where("id = ?", id).Updates(updates).Error
+}
+
+// OpenAICodexUsageResponse OpenAI Codex 用量响应结构 (用于Repository)
+type OpenAICodexUsageResponse struct {
+	PrimaryUsedPercent         *float64
+	PrimaryResetAfterSeconds   *int64
+	PrimaryWindowMinutes       *int64
+	SecondaryUsedPercent       *float64
+	SecondaryResetAfterSeconds *int64
+	SecondaryWindowMinutes     *int64
+}
+
+// UpdateGeminiUsage 更新 Gemini 用量数据
+func (r *AccountRepository) UpdateGeminiUsage(id uint, usage *GeminiUsageData) error {
+	now := time.Now()
+	updates := map[string]interface{}{
+		"gemini_usage_updated_at": now,
+	}
+
+	if usage.TempProjectID != "" {
+		updates["gemini_temp_project_id"] = usage.TempProjectID
+	}
+	if usage.ProjectID != "" {
+		updates["gemini_project_id"] = usage.ProjectID
+	}
+
+	return r.db.Model(&model.Account{}).Where("id = ?", id).Updates(updates).Error
+}
+
+// GeminiUsageData Gemini 用量数据
+type GeminiUsageData struct {
+	ProjectID     string
+	TempProjectID string
+}
+
 func (r *AccountRepository) IncrementRequestCount(id uint) error {
 	return r.db.Model(&model.Account{}).Where("id = ?", id).
 		Updates(map[string]interface{}{

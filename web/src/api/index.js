@@ -226,6 +226,10 @@ export default {
   recoverAccount: (accountId) => Post(`/admin/accounts/${accountId}/recover`),
   refreshAccountToken: (accountId) => Post(`/admin/accounts/${accountId}/refresh-token`),
 
+  // Admin - Usage Sync (用量同步)
+  fetchAccountUsage: (accountId) => Get(`/admin/accounts/${accountId}/usage`),
+  batchFetchUsage: (platform = 'all') => Post('/admin/accounts/batch-usage', { platform }),
+
   // Admin - Error Messages (错误消息配置)
   getErrorMessages: () => Get('/admin/error-messages'),
   getErrorMessage: (id) => Get(`/admin/error-messages/${id}`),

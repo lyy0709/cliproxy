@@ -125,6 +125,20 @@ type Account struct {
 	SevenDaySonnetUtilization *float64   `json:"seven_day_sonnet_utilization"` // 7天Sonnet窗口用量百分比 (0-100)
 	SevenDaySonnetResetsAt    *time.Time `json:"seven_day_sonnet_resets_at"`   // 7天Sonnet窗口重置时间
 
+	// OpenAI/Codex 用量字段 (从响应头 x-codex-* 获取)
+	CodexPrimaryUsedPercent         *float64   `json:"codex_primary_used_percent"`           // Codex 主窗口已使用百分比 (0-100)
+	CodexPrimaryResetAfterSeconds   *int64     `json:"codex_primary_reset_after_seconds"`    // Codex 主窗口重置剩余秒数
+	CodexPrimaryWindowMinutes       *int64     `json:"codex_primary_window_minutes"`         // Codex 主窗口时间窗口(分钟)
+	CodexSecondaryUsedPercent       *float64   `json:"codex_secondary_used_percent"`         // Codex 次窗口已使用百分比 (0-100)
+	CodexSecondaryResetAfterSeconds *int64     `json:"codex_secondary_reset_after_seconds"`  // Codex 次窗口重置剩余秒数
+	CodexSecondaryWindowMinutes     *int64     `json:"codex_secondary_window_minutes"`       // Codex 次窗口时间窗口(分钟)
+	CodexUsageUpdatedAt             *time.Time `json:"codex_usage_updated_at"`               // Codex 用量更新时间
+
+	// Gemini 用量字段 (从 Google Code Assist API 获取)
+	GeminiProjectID      string     `gorm:"size:255" json:"gemini_project_id,omitempty"`      // Gemini 固定项目 ID (Google Cloud/Workspace)
+	GeminiTempProjectID  string     `gorm:"size:255" json:"gemini_temp_project_id,omitempty"` // Gemini 临时项目 ID (个人账户自动获取)
+	GeminiUsageUpdatedAt *time.Time `json:"gemini_usage_updated_at,omitempty"`                // Gemini 用量更新时间
+
 	// 时间戳
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`

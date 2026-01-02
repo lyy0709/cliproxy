@@ -249,10 +249,46 @@ func (h *OpenAIResponsesHandler) HandleResponses(c *gin.Context) {
 	}
 	defer resp.Body.Close()
 
+	// 401/403 时尝试刷新 OpenAI OAuth Token 后重试一次
+	if (resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden) && account.RefreshToken != "" {
+		if err := scheduler.GetTokenManager().ForceRefresh(ctx, account.ID); err == nil {
+			refreshedAccount, refreshErr := repository.NewAccountRepository().GetByID(account.ID)
+			if refreshErr == nil {
+				account = refreshedAccount
+			}
+
+			resp.Body.Close()
+			httpReq, err = http.NewRequestWithContext(ctx, "POST", targetURL, bytes.NewReader(rawBody))
+			if err != nil {
+				log.Error("重试创建请求失败: %v", err)
+				response.CustomError(c, http.StatusInternalServerError, "internal_error", err.Error())
+				return
+			}
+			h.setRequestHeaders(httpReq, c, account)
+			resp, err = client.Do(httpReq)
+			if err != nil {
+				log.Error("重试请求失败 - 网络错误: %v", err)
+				response.CustomError(c, http.StatusBadGateway, "upstream_error", err.Error())
+				return
+			}
+			defer resp.Body.Close()
+		}
+	}
+
 	// 处理错误响应
 	if resp.StatusCode != http.StatusOK {
 		h.handleErrorResponse(c, resp, account, log)
 		return
+	}
+
+	// 从实际请求响应头更新 Codex 用量快照
+	if usage := buildCodexUsageFromHeaders(resp.Header); usage != nil {
+		accountID := account.ID
+		go func() {
+			if err := repository.NewAccountRepository().UpdateCodexUsage(accountID, usage); err != nil {
+				log.Warn("更新 Codex 用量失败: %v", err)
+			}
+		}()
 	}
 
 	// 记录开始时间
@@ -309,6 +345,44 @@ func (h *OpenAIResponsesHandler) setRequestHeaders(httpReq *http.Request, c *gin
 			httpReq.Header.Set("chatgpt-account-id", account.OrganizationID)
 		}
 	}
+}
+
+func buildCodexUsageFromHeaders(headers http.Header) *repository.OpenAICodexUsageResponse {
+	hasData := false
+
+	getFloat := func(key string) *float64 {
+		if val := headers.Get(key); val != "" {
+			if f, err := strconv.ParseFloat(val, 64); err == nil {
+				hasData = true
+				return &f
+			}
+		}
+		return nil
+	}
+
+	getInt := func(key string) *int64 {
+		if val := headers.Get(key); val != "" {
+			if i, err := strconv.ParseInt(val, 10, 64); err == nil {
+				hasData = true
+				return &i
+			}
+		}
+		return nil
+	}
+
+	usage := &repository.OpenAICodexUsageResponse{
+		PrimaryUsedPercent:         getFloat("x-codex-primary-used-percent"),
+		PrimaryResetAfterSeconds:   getInt("x-codex-primary-reset-after-seconds"),
+		PrimaryWindowMinutes:       getInt("x-codex-primary-window-minutes"),
+		SecondaryUsedPercent:       getFloat("x-codex-secondary-used-percent"),
+		SecondaryResetAfterSeconds: getInt("x-codex-secondary-reset-after-seconds"),
+		SecondaryWindowMinutes:     getInt("x-codex-secondary-window-minutes"),
+	}
+
+	if !hasData {
+		return nil
+	}
+	return usage
 }
 
 // handleErrorResponse 处理错误响应

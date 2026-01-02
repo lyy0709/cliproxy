@@ -24,6 +24,13 @@
           </svg>
           刷新
         </button>
+        <button class="btn btn-outline info" @click="handleBatchSyncUsage" :disabled="syncingBatch">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" :class="{ spinning: syncingBatch }">
+            <path d="M21 12a9 9 0 11-6.219-8.56"/>
+            <polyline points="21,4 21,12 13,12"/>
+          </svg>
+          {{ syncingBatch ? '同步中...' : '批量同步用量' }}
+        </button>
         <button class="btn btn-primary" @click="showFormDialog = true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="12" y1="5" x2="12" y2="19"/>
@@ -254,6 +261,12 @@
                       <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
                     </svg>
                   </button>
+                  <button v-if="canSyncUsage(account)" class="action-btn info" @click="handleSyncUsage(account)" :disabled="syncingIds.includes(account.id)" title="同步用量">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M21 12a9 9 0 11-6.219-8.56"/>
+                      <polyline points="21,4 21,12 13,12"/>
+                    </svg>
+                  </button>
                   <button v-if="canHealthCheck(account)" class="action-btn info" @click="handleHealthCheck(account)" :disabled="healthCheckingIds.includes(account.id)" title="检测">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
@@ -387,6 +400,8 @@ const deleting = ref(false)
 const healthCheckingIds = ref([])
 const recoveringIds = ref([])
 const refreshingIds = ref([])
+const syncingIds = ref([])
+const syncingBatch = ref(false)
 
 const pagination = reactive({
   page: 1,
@@ -610,6 +625,15 @@ function canRefreshToken(row) {
   return row.type === 'claude-official' && row.session_key
 }
 
+function canSyncUsage(row) {
+  // 支持用量同步的平台：claude-official (OAuth), openai, gemini
+  if (row.type === 'claude-official') {
+    // Claude Official 需要有 access_token（OAuth）才支持
+    return !!row.access_token
+  }
+  return row.type === 'openai' || row.type === 'gemini'
+}
+
 function filterByPlatform(key) {
   if (filters.platform === key) {
     filters.platform = ''
@@ -738,6 +762,59 @@ async function handleRefreshToken(row) {
     ElMessage.error('Token 刷新失败')
   } finally {
     refreshingIds.value = refreshingIds.value.filter(id => id !== row.id)
+  }
+}
+
+async function handleSyncUsage(row) {
+  syncingIds.value.push(row.id)
+  try {
+    const res = await api.fetchAccountUsage(row.id)
+    const data = res.data || res
+
+    // 根据平台显示不同的提示信息
+    if (data.message) {
+      ElMessage.info(`[${row.name}] ${data.message}`)
+    } else {
+      ElMessage.success(`[${row.name}] 用量同步成功`)
+    }
+
+    loadAccounts()
+  } catch (e) {
+    ElMessage.error(`[${row.name}] 用量同步失败`)
+  } finally {
+    syncingIds.value = syncingIds.value.filter(id => id !== row.id)
+  }
+}
+
+async function handleBatchSyncUsage() {
+  syncingBatch.value = true
+  try {
+    const res = await api.batchFetchUsage('all')
+    const data = res.data || res
+
+    // 构建结果消息
+    const messages = []
+    if (data.claude) {
+      messages.push(`Claude: ${data.claude.synced} 成功, ${data.claude.failed} 失败`)
+    }
+    if (data.openai) {
+      messages.push(`OpenAI: ${data.openai.synced} 成功, ${data.openai.failed} 失败`)
+    }
+    if (data.gemini) {
+      messages.push(`Gemini: ${data.gemini.synced} 成功, ${data.gemini.failed} 失败`)
+    }
+
+    if (messages.length > 0) {
+      ElMessage.success('批量同步完成\n' + messages.join('\n'))
+    } else {
+      ElMessage.info('没有找到需要同步的账户')
+    }
+
+    loadAccounts()
+  } catch (e) {
+    ElMessage.error('批量同步失败')
+  } finally {
+    syncingBatch.value = false
   }
 }
 
@@ -1517,6 +1594,15 @@ onMounted(() => {
 
 .btn-outline:hover:not(:disabled) {
   background: var(--apple-blue-light);
+}
+
+.btn-outline.info {
+  color: var(--apple-teal);
+  border-color: var(--apple-teal);
+}
+
+.btn-outline.info:hover:not(:disabled) {
+  background: rgba(48, 176, 199, 0.1);
 }
 
 .btn-loading {

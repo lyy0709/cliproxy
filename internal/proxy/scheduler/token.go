@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"cli-proxy/internal/model"
+	"cli-proxy/internal/proxy/adapter"
 	"cli-proxy/internal/repository"
 	"cli-proxy/pkg/utils"
 )
@@ -88,6 +89,8 @@ func (m *TokenManager) CheckAndRefreshToken(ctx context.Context, account *model.
 	switch account.Type {
 	case model.AccountTypeClaudeOfficial:
 		return m.refreshClaudeOfficialToken(ctx, account)
+	case model.AccountTypeOpenAI, model.AccountTypeOpenAIResponses:
+		return m.refreshOpenAIToken(ctx, account)
 	case model.AccountTypeGemini:
 		return m.refreshGeminiToken(ctx, account)
 	default:
@@ -206,6 +209,60 @@ func (m *TokenManager) refreshGeminiToken(ctx context.Context, account *model.Ac
 	return m.repo.UpdateToken(account.ID, account.AccessToken, account.RefreshToken, &expiry)
 }
 
+// refreshOpenAIToken 刷新 OpenAI OAuth Token
+func (m *TokenManager) refreshOpenAIToken(ctx context.Context, account *model.Account) error {
+	if account.RefreshToken == "" {
+		return fmt.Errorf("no refresh token available")
+	}
+
+	const openAITokenURL = "https://auth.openai.com/oauth/token"
+	const openAIClientID = "app_EMoamEEZ73f0CkXaXp7hrann"
+
+	data := url.Values{}
+	data.Set("grant_type", "refresh_token")
+	data.Set("client_id", openAIClientID)
+	data.Set("refresh_token", account.RefreshToken)
+
+	req, err := http.NewRequestWithContext(ctx, "POST", openAITokenURL, bytes.NewBufferString(data.Encode()))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Accept", "application/json")
+
+	client := adapter.GetChromeTLSClient(account)
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := utils.ReadAllWithLimit(resp.Body, utils.MaxResponseBodyBytes)
+		return fmt.Errorf("token refresh failed: %s", string(body))
+	}
+
+	var tokenResp struct {
+		AccessToken  string `json:"access_token"`
+		RefreshToken string `json:"refresh_token,omitempty"`
+		ExpiresIn    int    `json:"expires_in"`
+		TokenType    string `json:"token_type"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&tokenResp); err != nil {
+		return err
+	}
+
+	expiry := time.Now().Add(time.Duration(tokenResp.ExpiresIn) * time.Second)
+	account.AccessToken = tokenResp.AccessToken
+	account.TokenExpiry = &expiry
+	if tokenResp.RefreshToken != "" {
+		account.RefreshToken = tokenResp.RefreshToken
+	}
+
+	return m.repo.UpdateToken(account.ID, account.AccessToken, account.RefreshToken, &expiry)
+}
+
 // backgroundRefresh 后台定期检查并刷新 Token
 func (m *TokenManager) backgroundRefresh() {
 	ticker := time.NewTicker(1 * time.Minute)
@@ -242,6 +299,8 @@ func (m *TokenManager) ForceRefresh(ctx context.Context, accountID uint) error {
 	switch account.Type {
 	case model.AccountTypeClaudeOfficial:
 		return m.refreshClaudeOfficialToken(ctx, account)
+	case model.AccountTypeOpenAI, model.AccountTypeOpenAIResponses:
+		return m.refreshOpenAIToken(ctx, account)
 	case model.AccountTypeGemini:
 		return m.refreshGeminiToken(ctx, account)
 	default:

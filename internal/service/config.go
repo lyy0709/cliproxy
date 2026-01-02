@@ -352,3 +352,55 @@ func (s *ConfigService) GetTokenRefreshMaxRetries() int {
 	}
 	return val
 }
+
+// ========== 用量同步配置 ==========
+
+// GetUsageSyncEnabled 获取是否启用用量同步
+func (s *ConfigService) GetUsageSyncEnabled() bool {
+	return s.GetBool(model.ConfigUsageSyncEnabled)
+}
+
+// GetUsageSyncInterval 获取用量同步间隔
+func (s *ConfigService) GetUsageSyncInterval() time.Duration {
+	duration := s.GetDuration(model.ConfigUsageSyncInterval)
+	if duration < 5*time.Minute {
+		return 60 * time.Minute // 默认 60 分钟
+	}
+	return duration
+}
+
+// GetUsageSyncCacheTTL 获取用量缓存有效期
+func (s *ConfigService) GetUsageSyncCacheTTL() time.Duration {
+	duration := s.GetDuration(model.ConfigUsageSyncCacheTTL)
+	if duration < time.Minute {
+		return 5 * time.Minute // 默认 5 分钟
+	}
+	return duration
+}
+
+// GetUsageSyncConcurrency 获取批量同步并发数
+func (s *ConfigService) GetUsageSyncConcurrency() int {
+	val := s.GetInt(model.ConfigUsageSyncConcurrency)
+	if val <= 0 {
+		return 5 // 默认 5
+	}
+	if val > 20 {
+		return 20 // 最大 20
+	}
+	return val
+}
+
+// GetSyncClaudeEnabled 获取是否同步 Claude 账户
+func (s *ConfigService) GetSyncClaudeEnabled() bool {
+	return s.GetBool(model.ConfigSyncClaudeEnabled)
+}
+
+// GetSyncOpenAIEnabled 获取是否同步 OpenAI 账户
+func (s *ConfigService) GetSyncOpenAIEnabled() bool {
+	return s.GetBool(model.ConfigSyncOpenAIEnabled)
+}
+
+// GetSyncGeminiEnabled 获取是否同步 Gemini 账户
+func (s *ConfigService) GetSyncGeminiEnabled() bool {
+	return s.GetBool(model.ConfigSyncGeminiEnabled)
+}

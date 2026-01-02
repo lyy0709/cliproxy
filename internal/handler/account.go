@@ -435,3 +435,103 @@ func (h *AccountHandler) TriggerHealthCheck(c *gin.Context) {
 		"message": "健康检测已触发",
 	})
 }
+
+// FetchUsage 手动查询单个账户用量
+// GET /api/admin/accounts/:id/usage
+func (h *AccountHandler) FetchUsage(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		response.BadRequest(c, "invalid account id")
+		return
+	}
+
+	account, err := h.service.GetByID(uint(id))
+	if err != nil {
+		response.NotFound(c, "account not found")
+		return
+	}
+
+	// 根据平台调用不同的查询方法
+	usageSyncService := service.GetUsageSyncService()
+
+	switch account.Platform {
+	case model.PlatformClaude:
+		usage, err := usageSyncService.FetchClaudeOAuthUsage(uint(id))
+		if err != nil {
+			response.InternalError(c, err.Error())
+			return
+		}
+		if usage == nil {
+			response.Success(c, gin.H{"message": "该账户不支持 OAuth Usage API 或在缓存有效期内"})
+			return
+		}
+		response.Success(c, usage)
+
+	case model.PlatformOpenAI:
+		usage, err := usageSyncService.FetchOpenAICodexUsage(uint(id))
+		if err != nil {
+			response.InternalError(c, err.Error())
+			return
+		}
+		if usage == nil {
+			response.Success(c, gin.H{"message": "该账户无 Codex 用量信息或在缓存有效期内"})
+			return
+		}
+		response.Success(c, usage)
+
+	case model.PlatformGemini:
+		usage, err := usageSyncService.FetchGeminiUsage(uint(id))
+		if err != nil {
+			response.InternalError(c, err.Error())
+			return
+		}
+		if usage == nil {
+			response.Success(c, gin.H{"message": "该账户无用量信息或在缓存有效期内"})
+			return
+		}
+		response.Success(c, usage)
+
+	default:
+		response.BadRequest(c, "该平台不支持用量查询")
+	}
+}
+
+// BatchFetchUsage 批量同步所有账户用量
+// POST /api/admin/accounts/batch-usage
+func (h *AccountHandler) BatchFetchUsage(c *gin.Context) {
+	var req struct {
+		Platform string `json:"platform"` // "claude" | "openai" | "gemini" | "all"
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		req.Platform = "all"
+	}
+
+	usageSyncService := service.GetUsageSyncService()
+	result := make(map[string]interface{})
+
+	if req.Platform == "claude" || req.Platform == "all" {
+		synced, failed, _ := usageSyncService.SyncAllClaudeAccounts()
+		result["claude"] = gin.H{
+			"synced": synced,
+			"failed": failed,
+		}
+	}
+
+	if req.Platform == "openai" || req.Platform == "all" {
+		synced, failed, _ := usageSyncService.SyncAllOpenAIAccounts()
+		result["openai"] = gin.H{
+			"synced": synced,
+			"failed": failed,
+		}
+	}
+
+	if req.Platform == "gemini" || req.Platform == "all" {
+		synced, failed, _ := usageSyncService.SyncAllGeminiAccounts()
+		result["gemini"] = gin.H{
+			"synced": synced,
+			"failed": failed,
+		}
+	}
+
+	response.Success(c, result)
+}

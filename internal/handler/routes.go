@@ -163,6 +163,10 @@ func RegisterRoutes(r *gin.Engine) {
 			accounts.POST("/:id/health-check", accountHandler.HealthCheck)   // 手动触发单个账号健康检测
 			accounts.POST("/:id/recover", accountHandler.ForceRecover)       // 强制恢复账号
 			accounts.POST("/:id/refresh-token", accountHandler.RefreshToken) // 刷新 Token
+
+			// 用量查询相关操作
+			accounts.GET("/:id/usage", accountHandler.FetchUsage)         // 查询单个账户用量
+			accounts.POST("/batch-usage", accountHandler.BatchFetchUsage) // 批量同步所有账户用量
 		}
 
 		// 健康检测服务管理

@@ -150,6 +150,14 @@ func main() {
 			configService.GetAccountErrorThreshold())
 	}
 
+	// 启动用量同步服务
+	usageSyncService := service.GetUsageSyncService()
+	if configService.GetUsageSyncEnabled() {
+		usageSyncInterval := configService.GetUsageSyncInterval()
+		usageSyncService.StartAutoSync(usageSyncInterval)
+		log.Info("用量同步服务已启动 | 间隔: %v", usageSyncInterval)
+	}
+
 	// 设置配置变更回调
 	handler.SetConfigChangeCallback(func(key, value string) {
 		switch key {
@@ -157,6 +165,24 @@ func main() {
 			log.Info("会话 TTL 配置已更新: %s", value)
 		case model.ConfigAccountHealthCheckEnabled, model.ConfigAccountHealthCheckInterval:
 			healthCheckService.OnConfigChange(key, value)
+		case model.ConfigUsageSyncEnabled, model.ConfigUsageSyncInterval:
+			// 用量同步配置变更
+			if key == model.ConfigUsageSyncEnabled {
+				if value == "true" {
+					usageSyncInterval := configService.GetUsageSyncInterval()
+					usageSyncService.StartAutoSync(usageSyncInterval)
+					log.Info("用量同步服务已启动 | 间隔: %v", usageSyncInterval)
+				} else {
+					usageSyncService.StopAutoSync()
+					log.Info("用量同步服务已停止")
+				}
+			} else if key == model.ConfigUsageSyncInterval {
+				// 重启服务以应用新间隔
+				usageSyncService.StopAutoSync()
+				usageSyncInterval := configService.GetUsageSyncInterval()
+				usageSyncService.StartAutoSync(usageSyncInterval)
+				log.Info("用量同步服务已重启 | 新间隔: %v", usageSyncInterval)
+			}
 		}
 	})
 
@@ -228,6 +254,12 @@ func main() {
 	if healthCheckService != nil {
 		healthCheckService.Stop()
 		log.Info("健康检查服务已停止")
+	}
+
+	// 停止用量同步服务
+	if usageSyncService != nil {
+		usageSyncService.StopAutoSync()
+		log.Info("用量同步服务已停止")
 	}
 
 	// 创建超时上下文

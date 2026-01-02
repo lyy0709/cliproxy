@@ -18,9 +18,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"cli-proxy/internal/model"
+	"cli-proxy/internal/repository"
 	"cli-proxy/pkg/logger"
 )
 
@@ -61,17 +63,6 @@ type OpenAIResponsesRequest struct {
 	Store          bool     `json:"store,omitempty"`
 	PromptCacheKey string   `json:"prompt_cache_key,omitempty"`
 	Include        []string `json:"include,omitempty"`
-}
-
-// OpenAIResponsesUsageHeaders OpenAI Responses 使用量响应头
-type OpenAIResponsesUsageHeaders struct {
-	PrimaryUsedPercent          float64 `json:"primary_used_percent"`
-	PrimaryResetAfterSeconds    int     `json:"primary_reset_after_seconds"`
-	PrimaryWindowMinutes        int     `json:"primary_window_minutes"`
-	SecondaryUsedPercent        float64 `json:"secondary_used_percent"`
-	SecondaryResetAfterSeconds  int     `json:"secondary_reset_after_seconds"`
-	SecondaryWindowMinutes      int     `json:"secondary_window_minutes"`
-	PrimaryOverSecondaryPercent float64 `json:"primary_over_secondary_percent"`
 }
 
 // Send 非流式请求（OpenAI Responses API 强制使用流式，这里收集完整响应）
@@ -213,10 +204,14 @@ func (a *OpenAIResponsesAdapter) SendStream(ctx context.Context, account *model.
 	log.Debug("OpenAI Responses 响应状态码: %d, 开始接收流式数据", resp.StatusCode)
 
 	// 提取 Usage 头部
-	usageHeaders := a.extractUsageHeaders(resp.Header)
+	usageHeaders := a.extractCodexUsageFromHeaders(resp.Header)
 	if usageHeaders != nil {
-		log.Debug("OpenAI Responses Usage - Primary: %.1f%%, Secondary: %.1f%%",
-			usageHeaders.PrimaryUsedPercent, usageHeaders.SecondaryUsedPercent)
+		log.Debug("OpenAI Responses Usage 头部已捕获")
+		go func(accountID uint, usage *repository.OpenAICodexUsageResponse) {
+			if err := repository.NewAccountRepository().UpdateCodexUsage(accountID, usage); err != nil {
+				log.Warn("更新 Codex 用量失败: %v", err)
+			}
+		}(account.ID, usageHeaders)
 	}
 
 	// 处理流式响应 (带 context 取消检测)
@@ -294,38 +289,37 @@ func (a *OpenAIResponsesAdapter) handleErrorResponse(resp *http.Response, accoun
 	return nil, NewUpstreamError(resp.StatusCode, string(respBody))
 }
 
-// extractUsageHeaders 提取使用量头部
-func (a *OpenAIResponsesAdapter) extractUsageHeaders(headers http.Header) *OpenAIResponsesUsageHeaders {
-	usage := &OpenAIResponsesUsageHeaders{}
+// extractCodexUsageFromHeaders 提取 Codex 使用量响应头
+func (a *OpenAIResponsesAdapter) extractCodexUsageFromHeaders(headers http.Header) *repository.OpenAICodexUsageResponse {
 	hasData := false
 
-	if v := headers.Get("x-codex-primary-used-percent"); v != "" {
-		fmt.Sscanf(v, "%f", &usage.PrimaryUsedPercent)
-		hasData = true
+	getFloat := func(key string) *float64 {
+		if val := headers.Get(key); val != "" {
+			if f, err := strconv.ParseFloat(val, 64); err == nil {
+				hasData = true
+				return &f
+			}
+		}
+		return nil
 	}
-	if v := headers.Get("x-codex-primary-reset-after-seconds"); v != "" {
-		fmt.Sscanf(v, "%d", &usage.PrimaryResetAfterSeconds)
-		hasData = true
+
+	getInt := func(key string) *int64 {
+		if val := headers.Get(key); val != "" {
+			if i, err := strconv.ParseInt(val, 10, 64); err == nil {
+				hasData = true
+				return &i
+			}
+		}
+		return nil
 	}
-	if v := headers.Get("x-codex-primary-window-minutes"); v != "" {
-		fmt.Sscanf(v, "%d", &usage.PrimaryWindowMinutes)
-		hasData = true
-	}
-	if v := headers.Get("x-codex-secondary-used-percent"); v != "" {
-		fmt.Sscanf(v, "%f", &usage.SecondaryUsedPercent)
-		hasData = true
-	}
-	if v := headers.Get("x-codex-secondary-reset-after-seconds"); v != "" {
-		fmt.Sscanf(v, "%d", &usage.SecondaryResetAfterSeconds)
-		hasData = true
-	}
-	if v := headers.Get("x-codex-secondary-window-minutes"); v != "" {
-		fmt.Sscanf(v, "%d", &usage.SecondaryWindowMinutes)
-		hasData = true
-	}
-	if v := headers.Get("x-codex-primary-over-secondary-limit-percent"); v != "" {
-		fmt.Sscanf(v, "%f", &usage.PrimaryOverSecondaryPercent)
-		hasData = true
+
+	usage := &repository.OpenAICodexUsageResponse{
+		PrimaryUsedPercent:         getFloat("x-codex-primary-used-percent"),
+		PrimaryResetAfterSeconds:   getInt("x-codex-primary-reset-after-seconds"),
+		PrimaryWindowMinutes:       getInt("x-codex-primary-window-minutes"),
+		SecondaryUsedPercent:       getFloat("x-codex-secondary-used-percent"),
+		SecondaryResetAfterSeconds: getInt("x-codex-secondary-reset-after-seconds"),
+		SecondaryWindowMinutes:     getInt("x-codex-secondary-window-minutes"),
 	}
 
 	if !hasData {

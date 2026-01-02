@@ -383,6 +383,108 @@
         </div>
       </div>
 
+      <!-- 用量同步配置 -->
+      <div class="settings-card">
+        <div class="card-header">
+          <div class="card-icon sync">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 12a9 9 0 11-6.219-8.56"/>
+              <polyline points="21,4 21,12 13,12"/>
+            </svg>
+          </div>
+          <div class="card-title-row">
+            <h3>用量同步配置</h3>
+            <div class="header-badges">
+              <span :class="['status-badge', usageSyncEnabled ? 'success' : 'muted']">
+                {{ usageSyncEnabled ? '已启用' : '已禁用' }}
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="card-body" :class="{ loading }">
+          <div class="setting-item">
+            <div class="setting-info">
+              <span class="setting-label">启用自动同步</span>
+              <span class="setting-desc">定期自动同步账户用量信息（Claude/OpenAI/Gemini）</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" v-model="usageSyncEnabled" @change="markDirty" />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <span class="setting-label">同步间隔</span>
+              <span class="setting-desc">自动同步用量的时间间隔</span>
+            </div>
+            <div class="input-with-unit">
+              <input type="number" v-model.number="configs.usage_sync_interval" min="5" max="1440" class="form-input" :disabled="!usageSyncEnabled" @change="markDirty" />
+              <span class="unit">分钟</span>
+            </div>
+          </div>
+
+          <div class="setting-divider"></div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <span class="setting-label">缓存有效期</span>
+              <span class="setting-desc">避免频繁查询同一账户的缓存时间</span>
+            </div>
+            <div class="input-with-unit">
+              <input type="number" v-model.number="configs.usage_sync_cache_ttl" min="1" max="60" class="form-input" @change="markDirty" />
+              <span class="unit">分钟</span>
+            </div>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <span class="setting-label">并发查询数</span>
+              <span class="setting-desc">批量同步时的最大并发请求数</span>
+            </div>
+            <div class="input-with-unit">
+              <input type="number" v-model.number="configs.usage_sync_concurrency" min="1" max="20" class="form-input" @change="markDirty" />
+              <span class="unit">个</span>
+            </div>
+          </div>
+
+          <div class="setting-section-title">同步范围</div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <span class="setting-label">同步 Claude 账户</span>
+              <span class="setting-desc">同步 Claude Official OAuth 账户的 5H/7D 用量</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" v-model="syncClaudeEnabled" :disabled="!usageSyncEnabled" @change="markDirty" />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <span class="setting-label">同步 OpenAI 账户</span>
+              <span class="setting-desc">同步 OpenAI Codex 用量（从响应头提取）</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" v-model="syncOpenAIEnabled" :disabled="!usageSyncEnabled" @change="markDirty" />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <span class="setting-label">同步 Gemini 账户</span>
+              <span class="setting-desc">同步 Gemini Code Assist 项目 ID</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" v-model="syncGeminiEnabled" :disabled="!usageSyncEnabled" @change="markDirty" />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+
     </div>
 
     <!-- 配置项列表 -->
@@ -522,6 +624,14 @@ const configs = reactive({
   banned_probe_interval: 1,
   token_refresh_cooldown: 30,
   token_refresh_max_retries: 3,
+  // 用量同步配置
+  usage_sync_enabled: 'false',
+  usage_sync_interval: 60,
+  usage_sync_cache_ttl: 5,
+  usage_sync_concurrency: 5,
+  sync_claude_enabled: 'true',
+  sync_openai_enabled: 'true',
+  sync_gemini_enabled: 'true',
   // 邮件配置已移除
 })
 
@@ -569,6 +679,26 @@ const rateLimitedProbeEnabled = computed({
 const bannedProbeEnabled = computed({
   get: () => configs.banned_probe_enabled === 'true',
   set: (val) => { configs.banned_probe_enabled = val ? 'true' : 'false' }
+})
+
+const usageSyncEnabled = computed({
+  get: () => configs.usage_sync_enabled === 'true',
+  set: (val) => { configs.usage_sync_enabled = val ? 'true' : 'false' }
+})
+
+const syncClaudeEnabled = computed({
+  get: () => configs.sync_claude_enabled === 'true',
+  set: (val) => { configs.sync_claude_enabled = val ? 'true' : 'false' }
+})
+
+const syncOpenAIEnabled = computed({
+  get: () => configs.sync_openai_enabled === 'true',
+  set: (val) => { configs.sync_openai_enabled = val ? 'true' : 'false' }
+})
+
+const syncGeminiEnabled = computed({
+  get: () => configs.sync_gemini_enabled === 'true',
+  set: (val) => { configs.sync_gemini_enabled = val ? 'true' : 'false' }
 })
 
 function formatDate(str) {
@@ -772,6 +902,7 @@ onMounted(() => {
 .card-icon.records { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
 .card-icon.health { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
 .card-icon.strategy { background: linear-gradient(135deg, #fc4a1a 0%, #f7b733 100%); }
+.card-icon.sync { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
 
 .card-body {
   padding: var(--apple-spacing-lg);

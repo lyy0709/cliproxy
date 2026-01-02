@@ -84,6 +84,15 @@ const (
 	ConfigTokenRefreshCooldown   = "token_refresh_cooldown"    // 刷新失败冷却时间（分钟）
 	ConfigTokenRefreshMaxRetries = "token_refresh_max_retries" // 最大重试次数
 
+	// 用量同步相关
+	ConfigUsageSyncEnabled     = "usage_sync_enabled"      // 是否启用用量同步
+	ConfigUsageSyncInterval    = "usage_sync_interval"     // 用量同步间隔（分钟）
+	ConfigUsageSyncCacheTTL    = "usage_sync_cache_ttl"    // 用量缓存有效期（分钟）
+	ConfigUsageSyncConcurrency = "usage_sync_concurrency"  // 批量同步并发数
+	ConfigSyncClaudeEnabled    = "sync_claude_enabled"     // 是否同步 Claude 账户
+	ConfigSyncOpenAIEnabled    = "sync_openai_enabled"     // 是否同步 OpenAI 账户
+	ConfigSyncGeminiEnabled    = "sync_gemini_enabled"     // 是否同步 Gemini 账户
+
 )
 
 // 默认配置
@@ -126,4 +135,12 @@ var DefaultConfigs = []SystemConfig{
 	// 健康检测策略 - Token 刷新
 	{Key: ConfigTokenRefreshCooldown, Value: "30", Type: "int", Desc: "Token 刷新失败冷却时间（分钟）", Category: "health_check"},
 	{Key: ConfigTokenRefreshMaxRetries, Value: "3", Type: "int", Desc: "Token 刷新最大重试次数", Category: "health_check"},
+	// 用量同步配置
+	{Key: ConfigUsageSyncEnabled, Value: "false", Type: "bool", Desc: "是否启用账户用量自动同步（Claude/OpenAI/Gemini）", Category: "usage_sync"},
+	{Key: ConfigUsageSyncInterval, Value: "60", Type: "int", Desc: "用量同步间隔（分钟）", Category: "usage_sync"},
+	{Key: ConfigUsageSyncCacheTTL, Value: "5", Type: "int", Desc: "用量缓存有效期（分钟），避免频繁查询同一账户", Category: "usage_sync"},
+	{Key: ConfigUsageSyncConcurrency, Value: "5", Type: "int", Desc: "批量同步时的最大并发请求数", Category: "usage_sync"},
+	{Key: ConfigSyncClaudeEnabled, Value: "true", Type: "bool", Desc: "是否同步 Claude OAuth 账户用量", Category: "usage_sync"},
+	{Key: ConfigSyncOpenAIEnabled, Value: "true", Type: "bool", Desc: "是否同步 OpenAI Codex 用量", Category: "usage_sync"},
+	{Key: ConfigSyncGeminiEnabled, Value: "true", Type: "bool", Desc: "是否同步 Gemini 账户用量", Category: "usage_sync"},
 }
