@@ -760,7 +760,15 @@ async function saveConfigs() {
       banned_probe_enabled: configs.banned_probe_enabled,
       banned_probe_interval: String(configs.banned_probe_interval),
       token_refresh_cooldown: String(configs.token_refresh_cooldown),
-      token_refresh_max_retries: String(configs.token_refresh_max_retries)
+      token_refresh_max_retries: String(configs.token_refresh_max_retries),
+      // 用量同步配置
+      usage_sync_enabled: configs.usage_sync_enabled,
+      usage_sync_interval: String(configs.usage_sync_interval),
+      usage_sync_cache_ttl: String(configs.usage_sync_cache_ttl),
+      usage_sync_concurrency: String(configs.usage_sync_concurrency),
+      sync_claude_enabled: configs.sync_claude_enabled,
+      sync_openai_enabled: configs.sync_openai_enabled,
+      sync_gemini_enabled: configs.sync_gemini_enabled
     }
     await api.updateSystemConfigs(toSave)
     ElMessage.success('配置保存成功')
