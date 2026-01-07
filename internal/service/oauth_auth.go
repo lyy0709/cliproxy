@@ -287,13 +287,23 @@ func (s *OAuthAuthService) getOrganizationInfo(ctx context.Context, sessionKey s
 		return "", fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body)[:bodyLen])
 	}
 
+	log := logger.GetLogger("oauth_auth")
+
 	var orgs []struct {
 		UUID              string   `json:"uuid"`
 		Capabilities      []string `json:"capabilities"`
 		RavenType         string   `json:"raven_type"`
 		APIDisabledReason string   `json:"api_disabled_reason"`
 	}
-	json.Unmarshal(body, &orgs)
+	if err := json.Unmarshal(body, &orgs); err != nil {
+		log.Error("解析组织信息失败: %v, body: %s", err, string(body))
+		return "", fmt.Errorf("解析组织信息失败: %v", err)
+	}
+
+	log.Debug("获取到 %d 个组织", len(orgs))
+	for i, org := range orgs {
+		log.Debug("组织[%d]: UUID=%s, RavenType=%s, Capabilities=%v", i, org.UUID, org.RavenType, org.Capabilities)
+	}
 
 	if len(orgs) == 0 {
 		return "", fmt.Errorf("未找到任何组织")
@@ -311,12 +321,15 @@ func (s *OAuthAuthService) getOrganizationInfo(ctx context.Context, sessionKey s
 	if len(orgs) > 1 {
 		for _, org := range orgs {
 			if org.RavenType == "team" {
+				log.Info("找到 team 组织: UUID=%s", org.UUID)
 				// 确保 team 组织有 chat 能力
 				for _, cap := range org.Capabilities {
 					if cap == "chat" {
+						log.Info("选择 team 组织 UUID: %s", org.UUID)
 						return org.UUID, nil
 					}
 				}
+				log.Warn("team 组织 %s 没有 chat 能力", org.UUID)
 			}
 		}
 	}
@@ -325,6 +338,7 @@ func (s *OAuthAuthService) getOrganizationInfo(ctx context.Context, sessionKey s
 	for _, org := range orgs {
 		for _, cap := range org.Capabilities {
 			if cap == "chat" {
+				log.Info("选择默认组织 UUID: %s (RavenType=%s)", org.UUID, org.RavenType)
 				return org.UUID, nil
 			}
 		}
