@@ -1673,38 +1673,55 @@ async function handleNext() {
 }
 
 async function handleOAuthSuccess(tokenInfo) {
+  // 保存原始值，防止被重置
+  const savedName = form.name
+  const savedType = form.type
+
+  console.log('[AccountForm] handleOAuthSuccess 开始, savedName:', savedName, 'savedType:', savedType)
+
+  // 验证必填字段
+  if (!savedName || !savedType) {
+    showMessage('账户名称或类型为空，请重新填写', 'error')
+    console.error('[AccountForm] 缺少必填字段:', { name: savedName, type: savedType })
+    return
+  }
+
   if (Array.isArray(tokenInfo)) {
-    // 批量添加：保存原始的 name 和 type，避免被 resetForm 清空
-    const baseName = form.name
-    const accountType = form.type
+    // 批量添加
     let successCount = 0
     let failCount = 0
 
     for (let i = 0; i < tokenInfo.length; i++) {
       const token = tokenInfo[i]
-      // 生成唯一的账户名称
-      const accountName = tokenInfo.length === 1
-        ? baseName
-        : `${baseName}_${i + 1}`
+      const accountName = tokenInfo.length === 1 ? savedName : `${savedName}_${i + 1}`
 
       try {
-        const submitData = buildSubmitData()
-        // 确保 name 和 type 正确设置
-        submitData.name = accountName
-        submitData.type = accountType
-        submitData.access_token = token.access_token
-        submitData.refresh_token = token.refresh_token
-        submitData.session_key = token.session_key
+        // 直接构建提交数据，不依赖 buildSubmitData()
+        const submitData = {
+          name: accountName,
+          type: savedType,
+          enabled: form.enabled,
+          priority: form.priority,
+          weight: form.weight,
+          max_concurrency: form.max_concurrency,
+          access_token: token.access_token,
+          refresh_token: token.refresh_token,
+          session_key: token.session_key
+        }
 
+        // 添加其他可选字段
+        if (form.organization_id) submitData.organization_id = form.organization_id
+        if (form.proxy_id) submitData.proxy_id = form.proxy_id
+
+        console.log('[AccountForm] 批量创建账户:', accountName, submitData)
         await api.createAccount(submitData)
         successCount++
       } catch (e) {
         failCount++
-        console.error(`创建账户 ${accountName} 失败:`, e.message)
+        console.error(`[AccountForm] 创建账户 ${accountName} 失败:`, e.message || e)
       }
     }
 
-    // 批量完成后显示结果
     if (successCount > 0) {
       showMessage(`成功创建 ${successCount} 个账户${failCount > 0 ? `，${failCount} 个失败` : ''}`, 'success')
       emit('success')
@@ -1713,26 +1730,38 @@ async function handleOAuthSuccess(tokenInfo) {
     }
     handleClose()
   } else {
+    // 单个添加：确保 form 值正确
+    form.name = savedName
+    form.type = savedType
     form.access_token = tokenInfo.access_token
     form.refresh_token = tokenInfo.refresh_token
+    console.log('[AccountForm] 单个创建账户, form.name:', form.name, 'form.type:', form.type)
     await createAccount()
   }
 }
 
 async function createAccount() {
+  console.log('[AccountForm] createAccount 开始, form.name:', form.name, 'form.type:', form.type)
+
+  // 验证必填字段
+  if (!form.name || !form.type) {
+    showMessage('账户名称或类型不能为空', 'error')
+    console.error('[AccountForm] createAccount 缺少必填字段:', { name: form.name, type: form.type })
+    return
+  }
+
   submitting.value = true
   try {
     const submitData = buildSubmitData()
-    // 验证必填字段
-    if (!submitData.name || !submitData.type) {
-      throw new Error('账户名称和类型不能为空')
-    }
+    console.log('[AccountForm] 提交数据:', JSON.stringify(submitData))
+
     await api.createAccount(submitData)
     showMessage('创建成功', 'success')
     emit('success')
     handleClose()
   } catch (e) {
     showMessage(e.message || '创建失败', 'error')
+    console.error('[AccountForm] 创建失败:', e)
   } finally {
     submitting.value = false
   }
@@ -1765,16 +1794,18 @@ async function handleSubmit() {
 }
 
 function buildSubmitData() {
+  // 注意：后端不支持 description 和 account_type 字段
   const data = {
     name: form.name,
     type: form.type,
-    description: form.description,
     enabled: form.enabled,
     priority: form.priority,
     weight: form.weight,
-    max_concurrency: form.max_concurrency,
-    account_type: form.accountType
+    max_concurrency: form.max_concurrency
   }
+
+  // 调试日志
+  console.log('[AccountForm] buildSubmitData - form.name:', form.name, 'form.type:', form.type)
 
   if (form.api_key) data.api_key = form.api_key
   if (form.api_url && form.addType !== 'xyrt') data.base_url = form.api_url
