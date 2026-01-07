@@ -1674,12 +1674,44 @@ async function handleNext() {
 
 async function handleOAuthSuccess(tokenInfo) {
   if (Array.isArray(tokenInfo)) {
-    for (const token of tokenInfo) {
-      form.access_token = token.access_token
-      form.refresh_token = token.refresh_token
-      form.session_key = token.session_key
-      await createAccount()
+    // 批量添加：保存原始的 name 和 type，避免被 resetForm 清空
+    const baseName = form.name
+    const accountType = form.type
+    let successCount = 0
+    let failCount = 0
+
+    for (let i = 0; i < tokenInfo.length; i++) {
+      const token = tokenInfo[i]
+      // 生成唯一的账户名称
+      const accountName = tokenInfo.length === 1
+        ? baseName
+        : `${baseName}_${i + 1}`
+
+      try {
+        const submitData = buildSubmitData()
+        // 确保 name 和 type 正确设置
+        submitData.name = accountName
+        submitData.type = accountType
+        submitData.access_token = token.access_token
+        submitData.refresh_token = token.refresh_token
+        submitData.session_key = token.session_key
+
+        await api.createAccount(submitData)
+        successCount++
+      } catch (e) {
+        failCount++
+        console.error(`创建账户 ${accountName} 失败:`, e.message)
+      }
     }
+
+    // 批量完成后显示结果
+    if (successCount > 0) {
+      showMessage(`成功创建 ${successCount} 个账户${failCount > 0 ? `，${failCount} 个失败` : ''}`, 'success')
+      emit('success')
+    } else {
+      showMessage('全部创建失败', 'error')
+    }
+    handleClose()
   } else {
     form.access_token = tokenInfo.access_token
     form.refresh_token = tokenInfo.refresh_token
@@ -1691,6 +1723,10 @@ async function createAccount() {
   submitting.value = true
   try {
     const submitData = buildSubmitData()
+    // 验证必填字段
+    if (!submitData.name || !submitData.type) {
+      throw new Error('账户名称和类型不能为空')
+    }
     await api.createAccount(submitData)
     showMessage('创建成功', 'success')
     emit('success')
