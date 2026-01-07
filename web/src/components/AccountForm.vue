@@ -1700,6 +1700,8 @@ async function handleOAuthSuccess(tokenInfo) {
         const submitData = {
           name: accountName,
           type: savedType,
+          // SessionKey 自动授权实际获取的是 OAuth Token，创建账号时按 OAuth 记录
+          auth_type: 'oauth',
           enabled: form.enabled,
           priority: form.priority,
           weight: form.weight,
