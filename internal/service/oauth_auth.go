@@ -288,11 +288,40 @@ func (s *OAuthAuthService) getOrganizationInfo(ctx context.Context, sessionKey s
 	}
 
 	var orgs []struct {
-		UUID         string   `json:"uuid"`
-		Capabilities []string `json:"capabilities"`
+		UUID              string   `json:"uuid"`
+		Capabilities      []string `json:"capabilities"`
+		RavenType         string   `json:"raven_type"`
+		APIDisabledReason string   `json:"api_disabled_reason"`
 	}
 	json.Unmarshal(body, &orgs)
 
+	if len(orgs) == 0 {
+		return "", fmt.Errorf("未找到任何组织")
+	}
+
+	// 检查是否有账号被封禁
+	for _, org := range orgs {
+		if org.APIDisabledReason == "trust_and_safety" {
+			return "", fmt.Errorf("账号被封禁，原因: 账号被风控")
+		}
+	}
+
+	// 如果有多个组织，优先选择 raven_type 为 "team" 的组织
+	// 因为对于 team 订阅，只有 team 类型的组织 UUID 是有效的
+	if len(orgs) > 1 {
+		for _, org := range orgs {
+			if org.RavenType == "team" {
+				// 确保 team 组织有 chat 能力
+				for _, cap := range org.Capabilities {
+					if cap == "chat" {
+						return org.UUID, nil
+					}
+				}
+			}
+		}
+	}
+
+	// 如果不是 team 账号或没找到 team 组织，使用第一个有 chat 能力的组织
 	for _, org := range orgs {
 		for _, cap := range org.Capabilities {
 			if cap == "chat" {
