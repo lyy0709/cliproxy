@@ -17,6 +17,7 @@ import (
 	"encoding/json"
 	"errors"
 	"math/rand"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -172,8 +173,13 @@ func (s *Scheduler) SelectAccountWithSession(ctx context.Context, modelName stri
 		return nil, ErrNoAvailableAccount
 	}
 
-	// 根据优先级和权重选择
-	account := s.selectByWeight(accounts)
+	// 根据「优先级 + LRU」策略选择账户
+	account := s.selectByPriorityLRU(accounts)
+
+	// 更新账户最后使用时间（异步，用于 LRU 排序）
+	if account != nil {
+		s.markAccountUsed(account.ID)
+	}
 
 	// 绑定会话到 Redis
 	if sessionID != "" && s.sessionCache != nil && account != nil {
@@ -214,7 +220,12 @@ func (s *Scheduler) SelectAccountByType(ctx context.Context, accountType string,
 		return nil, ErrNoAvailableAccount
 	}
 
-	return s.selectByWeight(accountPtrs), nil
+	// 根据「优先级 + LRU」策略选择账户
+	account := s.selectByPriorityLRU(accountPtrs)
+	if account != nil {
+		s.markAccountUsed(account.ID)
+	}
+	return account, nil
 }
 
 // SelectAccountByTypesWithSession 根据多个账户类型选择（支持会话粘性）
@@ -263,8 +274,13 @@ func (s *Scheduler) SelectAccountByTypesWithSession(ctx context.Context, account
 		}
 	}
 
-	// 根据权重选择
-	account := s.selectByWeight(accountPtrs)
+	// 根据「优先级 + LRU」策略选择账户
+	account := s.selectByPriorityLRU(accountPtrs)
+
+	// 更新账户最后使用时间（异步，用于 LRU 排序）
+	if account != nil {
+		s.markAccountUsed(account.ID)
+	}
 
 	// 绑定会话到 Redis
 	if sessionID != "" && s.sessionCache != nil && account != nil {
@@ -326,8 +342,13 @@ func (s *Scheduler) SelectAccountByTypeWithSession(ctx context.Context, accountT
 		}
 	}
 
-	// 根据权重选择
-	account := s.selectByWeight(accountPtrs)
+	// 根据「优先级 + LRU」策略选择账户
+	account := s.selectByPriorityLRU(accountPtrs)
+
+	// 更新账户最后使用时间（异步，用于 LRU 排序）
+	if account != nil {
+		s.markAccountUsed(account.ID)
+	}
 
 	// 绑定会话到 Redis
 	if sessionID != "" && s.sessionCache != nil && account != nil {
@@ -512,7 +533,8 @@ func getAccountMappedModel(acc *model.Account, originalModel string) string {
 	return ""
 }
 
-// selectByWeight 根据权重选择账户
+// selectByWeight 根据权重选择账户（已废弃，保留兼容）
+// Deprecated: 请使用 selectByPriorityLRU 替代
 func (s *Scheduler) selectByWeight(accounts []*model.Account) *model.Account {
 	if len(accounts) == 1 {
 		return accounts[0]
@@ -539,6 +561,46 @@ func (s *Scheduler) selectByWeight(accounts []*model.Account) *model.Account {
 	}
 
 	return accounts[0]
+}
+
+// selectByPriorityLRU 按「优先级 + LRU」策略选择账户
+// Priority 越小优先级越高，同优先级按 LastUsedAt 升序（最久未使用优先）
+func (s *Scheduler) selectByPriorityLRU(accounts []*model.Account) *model.Account {
+	if len(accounts) == 0 {
+		return nil
+	}
+	if len(accounts) == 1 {
+		return accounts[0]
+	}
+
+	// 排序：Priority 升序，同 Priority 按 LastUsedAt 升序
+	sort.Slice(accounts, func(i, j int) bool {
+		if accounts[i].Priority != accounts[j].Priority {
+			return accounts[i].Priority < accounts[j].Priority
+		}
+		// 同优先级，按 LastUsedAt 升序（nil 视为最早，优先选择）
+		iTime := time.Time{}
+		jTime := time.Time{}
+		if accounts[i].LastUsedAt != nil {
+			iTime = *accounts[i].LastUsedAt
+		}
+		if accounts[j].LastUsedAt != nil {
+			jTime = *accounts[j].LastUsedAt
+		}
+		return iTime.Before(jTime)
+	})
+
+	return accounts[0]
+}
+
+// markAccountUsed 异步更新账户最后使用时间（用于 LRU 策略）
+func (s *Scheduler) markAccountUsed(accountID uint) {
+	go func() {
+		if err := s.repo.UpdateLastUsedAt(accountID); err != nil {
+			log := logger.GetLogger("scheduler")
+			log.Error("更新账户最后使用时间失败 | AccountID: %d | Error: %v", accountID, err)
+		}
+	}()
 }
 
 // MarkAccountError 标记账户错误

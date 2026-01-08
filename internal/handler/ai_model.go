@@ -121,6 +121,8 @@ func (h *AIModelHandler) Update(c *gin.Context) {
 	existing.MaxOutput = updates.MaxOutput
 	existing.InputPrice = updates.InputPrice
 	existing.OutputPrice = updates.OutputPrice
+	existing.CacheCreatePrice = updates.CacheCreatePrice
+	existing.CacheReadPrice = updates.CacheReadPrice
 	existing.Enabled = updates.Enabled
 	existing.IsDefault = updates.IsDefault
 	existing.SortOrder = updates.SortOrder

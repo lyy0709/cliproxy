@@ -703,7 +703,13 @@ func (r *RetryableRequest) selectNextAccount(ctx context.Context, modelName stri
 		return nil, ErrNoAvailableAccount
 	}
 
-	selected := r.Scheduler.selectByWeight(available)
+	// 根据「优先级 + LRU」策略选择账户
+	selected := r.Scheduler.selectByPriorityLRU(available)
+
+	// 更新账户最后使用时间（异步，用于 LRU 排序）
+	if selected != nil {
+		r.Scheduler.markAccountUsed(selected.ID)
+	}
 
 	// 【会话粘性】绑定新选中的账户（到 Redis）
 	if r.SessionID != "" {
@@ -884,7 +890,13 @@ func (r *RetryableRequest) selectNextAccountAllowRetry(ctx context.Context, mode
 
 	// 如果有未尝试的账户，优先选择
 	if len(available) > 0 {
-		selected := r.Scheduler.selectByWeight(available)
+		// 根据「优先级 + LRU」策略选择账户
+		selected := r.Scheduler.selectByPriorityLRU(available)
+
+		// 更新账户最后使用时间（异步，用于 LRU 排序）
+		if selected != nil {
+			r.Scheduler.markAccountUsed(selected.ID)
+		}
 
 		// 【会话粘性】绑定新选中的账户（到 Redis）
 		if r.SessionID != "" {

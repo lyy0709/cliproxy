@@ -311,6 +311,12 @@ func (r *AccountRepository) IncrementRequestCount(id uint) error {
 		}).Error
 }
 
+// UpdateLastUsedAt 仅更新最后使用时间（选中账户时立即调用，用于 LRU 策略）
+func (r *AccountRepository) UpdateLastUsedAt(id uint) error {
+	return r.db.Model(&model.Account{}).Where("id = ?", id).
+		Update("last_used_at", gorm.Expr("NOW()")).Error
+}
+
 func (r *AccountRepository) IncrementErrorCount(id uint) error {
 	return r.db.Model(&model.Account{}).Where("id = ?", id).
 		Update("error_count", gorm.Expr("error_count + 1")).Error
